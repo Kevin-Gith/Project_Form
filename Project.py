@@ -21,10 +21,10 @@ sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
 
 # ========== 使用者帳號密碼 ==========
 USER_CREDENTIALS = {
-    "sam@kipotec.com.tw": "1234",
-    "sale1@kipotec.com.tw": "abcd",
-    "sale5@kipotec.com.tw": "pass123",
-    "sale2@kipotec.com.tw": "0000"
+    "sam@kipotec.com.tw": "Kipo-0926969586$$$",
+    "sale1@kipotec.com.tw": "Kipo-0917369466$$$",
+    "sale5@kipotec.com.tw": "Kipo-0925698417$$$",
+    "sale2@kipotec.com.tw": "Kipo-0905038111$$$"
 }
 
 USER_MAPPING = {
@@ -54,7 +54,6 @@ def login_page():
 def render_customer_info():
     st.header("A. 客戶資訊")
 
-    # 自動帶出北辦業務
     current_user = st.session_state.get("user", "")
     sales_user = USER_MAPPING.get(current_user, "Unknown")
     st.text_input("北辦業務", value=sales_user, disabled=True)
@@ -95,8 +94,8 @@ def render_project_info():
     ])
 
     cooling = st.selectbox("散熱方式", [
-        "(01)Air Cooling", "(02)Fan", "(03)Cooler(含Fan)",
-        "(04)Liquid Cooling", "(05)Other"
+        "(01)Air Cooling氣冷", "(02)Fan風扇", "(03)Cooler(含Fan)",
+        "(04)Liquid Cooling水冷", "(05)Other"
     ])
 
     delivery = st.selectbox("交貨地點", [
@@ -108,10 +107,15 @@ def render_project_info():
     demand_qty = st.text_input("需求量 (預估數量/總年數)")
 
     st.subheader("Schedule")
-    si = st.text_input("SI")
-    pv = st.text_input("PV")
-    mv = st.text_input("MV")
-    mp = st.text_input("MP")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        si = st.text_input("SI")
+    with col2:
+        pv = st.text_input("PV")
+    with col3:
+        mv = st.text_input("MV")
+    with col4:
+        mp = st.text_input("MP")
 
     return {
         "Product_Application": product_app,
@@ -130,10 +134,10 @@ def render_project_info():
 def render_spec_info():
     st.header("C. 規格資訊")
 
-    spec_option = st.selectbox("散熱方案", ["Air Cooling", "Fan", "Liquid Cooling"])
+    spec_option = st.selectbox("散熱方案", ["Air Cooling氣冷", "Fan風扇", "Liquid Cooling水冷"])
     spec_data = {"Spec_Type": spec_option}
 
-    if spec_option == "Air Cooling":
+    if spec_option == "Air Cooling氣冷":
         spec_data["Air_Flow"] = st.text_input("Air Flow (RPM/Voltage/CFM)")
         spec_data["Tcase_Max"] = st.text_input("Tcase_Max (°C)")
         spec_data["Thermal_Resistance"] = st.text_input("Thermal Resistance (°C/W)")
@@ -142,7 +146,7 @@ def render_spec_info():
         spec_data["Width"] = st.text_input("Width (mm)")
         spec_data["Height"] = st.text_input("Height (mm)")
 
-    elif spec_option == "Fan":
+    elif spec_option == "Fan風扇":
         spec_data["Length"] = st.text_input("Length (mm)")
         spec_data["Width"] = st.text_input("Width (mm)")
         spec_data["Height"] = st.text_input("Height (mm)")
@@ -159,7 +163,7 @@ def render_spec_info():
         spec_data["Connector_Pin"] = st.text_input("線序")
         spec_data["Connector_Length"] = st.text_input("出框線長")
 
-    elif spec_option == "Liquid Cooling":
+    elif spec_option == "Liquid Cooling水冷":
         spec_data["Plate_Form"] = st.text_input("Plate Form")
         spec_data["Max_Power"] = st.text_input("Max Power (W)")
         spec_data["Tj_Max"] = st.text_input("Tj_Max (°C)")
@@ -168,7 +172,7 @@ def render_spec_info():
         spec_data["Chip_Size"] = st.text_input("Chip contact size LxWxH (mm)")
         spec_data["Thermal_Resistance"] = st.text_input("Thermal Resistance (°C/W)")
         spec_data["Flow_Rate"] = st.text_input("Flow rate (LPM)")
-        spec_data["Impedance"] = st.text_input("Impedance (KPa)")  # ✅ 修正大小寫
+        spec_data["Impedance"] = st.text_input("Impedance (KPa)")
         spec_data["Max_Loading"] = st.text_input("Max loading (lbs)")
 
     return spec_data
