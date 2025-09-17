@@ -76,7 +76,7 @@ def render_customer_info():
         "(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(04)其他"
     ])
     if purpose.endswith("其他"):
-        purpose = st.text_input("請輸入其他申請目的")
+        purpose = st.text_input("請輸入申請目的")
 
     project_name = st.text_input("客戶專案名稱")
     proposal_date = st.date_input("客戶提案日期", value=datetime.date.today())
@@ -99,26 +99,25 @@ def render_project_info():
         "(04)Automotive(Car)", "(05)Other"
     ])
     if product_app.endswith("Other"):
-        product_app = st.text_input("請輸入其他產品應用")
+        product_app = st.text_input("請輸入產品應用")
 
     cooling = st.selectbox("散熱方式", [
         "(01)Air Cooling氣冷", "(02)Fan風扇", "(03)Cooler(含Fan)",
         "(04)Liquid Cooling水冷", "(05)Other"
     ])
     if cooling.endswith("Other"):
-        cooling = st.text_input("請輸入其他散熱方式")
+        cooling = st.text_input("請輸入散熱方式")
 
     delivery = st.selectbox("交貨地點", [
         "(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"
     ])
     if delivery.endswith("Other"):
-        delivery = st.text_input("請輸入其他交貨地點")
+        delivery = st.text_input("請輸入交貨地點")
 
     sample_date = st.date_input("樣品需求日期", value=datetime.date.today())
     sample_qty = st.text_input("樣品需求數量")
     demand_qty = st.text_input("需求量 (預估數量/總年數)")
 
-    # Schedule 與樣品需求數量樣式一致
     st.text("Schedule")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -198,17 +197,22 @@ def main():
     if not st.session_state["logged_in"]:
         login_page()
     else:
-        st.title("📌 Project Form 系統")
+        st.title("🖥️ Kipo專案申請系統")
 
         customer_info = render_customer_info()
         project_info = render_project_info()
         spec_info = render_spec_info()
 
         if st.button("完成"):
-            record = {**customer_info, **project_info, **spec_info}
-            record["Application_Deadline"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
-            sheet.append_row(list(record.values()))
-            st.success("✅ 表單已送出並記錄到 Google Sheet！")
+            # 驗證必填欄位（A 與 B）
+            missing_fields = [k for k, v in {**customer_info, **project_info}.items() if not v]
+            if missing_fields:
+                st.error("❌ 客戶資訊或開案資訊未填寫完成，請重新確認")
+            else:
+                record = {**customer_info, **project_info, **spec_info}
+                record["Application_Deadline"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+                sheet.append_row(list(record.values()))
+                st.success("✅ 表單已送出並記錄到 Google Sheet！")
 
 if __name__ == "__main__":
     main()
