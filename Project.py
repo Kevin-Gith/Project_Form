@@ -36,7 +36,7 @@ USER_MAPPING = {
 
 # ========== Function：登入頁 ==========
 def login_page():
-    st.title("🔐 使用者登入")
+    st.title("🔐 Kipo專案申請系統")
 
     username = st.text_input("帳號")
     password = st.text_input("密碼", type="password")
@@ -48,7 +48,7 @@ def login_page():
             st.success("登入成功！")
             st.rerun()
         else:
-            st.error("帳號或密碼錯誤！")
+            st.error("帳號或密碼錯誤，請重新輸入")
 
 # ========== Function：A. 客戶資訊 ==========
 def render_customer_info():
@@ -62,15 +62,21 @@ def render_customer_info():
         "(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤",
         "(05)光寶", "(06)技嘉", "(07)智邦", "(08)其他"
     ])
+    if odm.endswith("其他"):
+        odm = st.text_input("請輸入 ODM 客戶")
 
     brand = st.selectbox("品牌客戶 (RD)", [
         "(01)惠普", "(02)聯想", "(03)高通", "(04)華碩",
         "(05)宏碁", "(06)微星", "(07)技嘉", "(08)其他"
     ])
+    if brand.endswith("其他"):
+        brand = st.text_input("請輸入品牌客戶")
 
     purpose = st.selectbox("申請目的", [
         "(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(04)其他"
     ])
+    if purpose.endswith("其他"):
+        purpose = st.text_input("請輸入其他申請目的")
 
     project_name = st.text_input("客戶專案名稱")
     proposal_date = st.date_input("客戶提案日期", value=datetime.date.today())
@@ -92,21 +98,28 @@ def render_project_info():
         "(01)NB CPU", "(02)NB GPU", "(03)Server",
         "(04)Automotive(Car)", "(05)Other"
     ])
+    if product_app.endswith("Other"):
+        product_app = st.text_input("請輸入其他產品應用")
 
     cooling = st.selectbox("散熱方式", [
         "(01)Air Cooling氣冷", "(02)Fan風扇", "(03)Cooler(含Fan)",
         "(04)Liquid Cooling水冷", "(05)Other"
     ])
+    if cooling.endswith("Other"):
+        cooling = st.text_input("請輸入其他散熱方式")
 
     delivery = st.selectbox("交貨地點", [
         "(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"
     ])
+    if delivery.endswith("Other"):
+        delivery = st.text_input("請輸入其他交貨地點")
 
     sample_date = st.date_input("樣品需求日期", value=datetime.date.today())
     sample_qty = st.text_input("樣品需求數量")
     demand_qty = st.text_input("需求量 (預估數量/總年數)")
 
-    st.subheader("Schedule")
+    # Schedule 與樣品需求數量樣式一致
+    st.text("Schedule")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         si = st.text_input("SI")
