@@ -21,10 +21,17 @@ sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
 
 # ========== 使用者帳號密碼 ==========
 USER_CREDENTIALS = {
-    "sam@kipotec.com.tw": "Kipo-0926969586$$$",
-    "sale1@kipotec.com.tw": "Kipo-0917369466$$$",
-    "sale5@kipotec.com.tw": "Kipo-0925698417$$$",
-    "sale2@kipotec.com.tw": "Kipo-0905038111$$$"
+    "sam@kipotec.com.tw": "1234",
+    "sale1@kipotec.com.tw": "abcd",
+    "sale5@kipotec.com.tw": "pass123",
+    "sale2@kipotec.com.tw": "0000"
+}
+
+USER_MAPPING = {
+    "sam@kipotec.com.tw": "Sam",
+    "sale1@kipotec.com.tw": "Vivian",
+    "sale5@kipotec.com.tw": "Wendy",
+    "sale2@kipotec.com.tw": "Lillian"
 }
 
 # ========== Function：登入頁 ==========
@@ -40,7 +47,6 @@ def login_page():
             st.session_state["user"] = username
             st.success("登入成功！")
             st.rerun()
-            
         else:
             st.error("帳號或密碼錯誤！")
 
@@ -48,41 +54,58 @@ def login_page():
 def render_customer_info():
     st.header("A. 客戶資訊")
 
-    user_mapping = {
-        "sam": "Sam",
-        "vivian": "Vivian",
-        "wendy": "Wendy",
-        "lillian": "Lillian"
-    }
-    sales_user = user_mapping.get(st.session_state.get("user"), "Unknown")
+    # 自動帶出北辦業務
+    current_user = st.session_state.get("user", "")
+    sales_user = USER_MAPPING.get(current_user, "Unknown")
+    st.text_input("北辦業務", value=sales_user, disabled=True)
 
-    odm = st.text_input("ODM 客戶 (RD)")
-    brand = st.text_input("品牌客戶 (RD)")
-    applicant = st.text_input("申請人", sales_user)
+    odm = st.selectbox("ODM客戶 (RD)", [
+        "(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤",
+        "(05)光寶", "(06)技嘉", "(07)智邦", "(08)其他"
+    ])
+
+    brand = st.selectbox("品牌客戶 (RD)", [
+        "(01)惠普", "(02)聯想", "(03)高通", "(04)華碩",
+        "(05)宏碁", "(06)微星", "(07)技嘉", "(08)其他"
+    ])
+
+    purpose = st.selectbox("申請目的", [
+        "(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(04)其他"
+    ])
+
+    project_name = st.text_input("客戶專案名稱")
+    proposal_date = st.date_input("客戶提案日期", value=datetime.date.today())
 
     return {
+        "Sales_User": sales_user,
         "ODM_Customers": odm,
         "Brand_Customers": brand,
-        "Applicant": applicant
+        "Application_Purpose": purpose,
+        "Project_Name": project_name,
+        "Proposal_Date": proposal_date.strftime("%Y/%m/%d")
     }
 
 # ========== Function：B. 開案資訊 ==========
 def render_project_info():
     st.header("B. 開案資訊")
 
-    purpose = st.selectbox("申請目的", ["(01)開案", "(02)量產", "(00)Other"])
-    if purpose == "(00)Other":
-        purpose = st.text_input("請輸入其他申請目的")
+    product_app = st.selectbox("產品應用", [
+        "(01)NB CPU", "(02)NB GPU", "(03)Server",
+        "(04)Automotive(Car)", "(05)Other"
+    ])
 
-    product_app = st.text_input("產品應用")
-    cooling = st.selectbox("散熱方式", ["Air Cooling", "Fan", "Liquid Cooling", "(00)Other"])
-    if cooling == "(00)Other":
-        cooling = st.text_input("請輸入其他散熱方式")
+    cooling = st.selectbox("散熱方式", [
+        "(01)Air Cooling", "(02)Fan", "(03)Cooler(含Fan)",
+        "(04)Liquid Cooling", "(05)Other"
+    ])
 
-    delivery = st.text_input("交貨地點")
+    delivery = st.selectbox("交貨地點", [
+        "(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"
+    ])
 
     sample_date = st.date_input("樣品需求日期", value=datetime.date.today())
-    sample_qty = st.number_input("樣品需求數量", min_value=1, step=1)
+    sample_qty = st.text_input("樣品需求數量")
+    demand_qty = st.text_input("需求量 (預估數量/總年數)")
 
     st.subheader("Schedule")
     si = st.text_input("SI")
@@ -90,26 +113,24 @@ def render_project_info():
     mv = st.text_input("MV")
     mp = st.text_input("MP")
 
-    demand_qty = st.text_input("需求量 (預估數量/總年數)")
-
     return {
-        "Application_Purpose": purpose,
         "Product_Application": product_app,
         "Cooling_Solution": cooling,
         "Delivery_Location": delivery,
         "Sample_Date": sample_date.strftime("%Y/%m/%d"),
         "Sample_Qty": sample_qty,
+        "Demand_Qty": demand_qty,
         "SI": si,
         "PV": pv,
         "MV": mv,
-        "MP": mp,
-        "Demand_Qty": demand_qty
+        "MP": mp
     }
 
 # ========== Function：C. 規格資訊 ==========
 def render_spec_info():
     st.header("C. 規格資訊")
-    spec_option = st.selectbox("Cooling Solution", ["Air Cooling", "Fan", "Liquid Cooling"])
+
+    spec_option = st.selectbox("散熱方案", ["Air Cooling", "Fan", "Liquid Cooling"])
     spec_data = {"Spec_Type": spec_option}
 
     if spec_option == "Air Cooling":
@@ -117,10 +138,14 @@ def render_spec_info():
         spec_data["Tcase_Max"] = st.text_input("Tcase_Max (°C)")
         spec_data["Thermal_Resistance"] = st.text_input("Thermal Resistance (°C/W)")
         spec_data["Max_Power"] = st.text_input("Max Power (W)")
-        spec_data["Size"] = st.text_input("Size LxWxH (mm)")
+        spec_data["Length"] = st.text_input("Length (mm)")
+        spec_data["Width"] = st.text_input("Width (mm)")
+        spec_data["Height"] = st.text_input("Height (mm)")
 
     elif spec_option == "Fan":
-        spec_data["Size"] = st.text_input("Size LxWxH (mm)")
+        spec_data["Length"] = st.text_input("Length (mm)")
+        spec_data["Width"] = st.text_input("Width (mm)")
+        spec_data["Height"] = st.text_input("Height (mm)")
         spec_data["Max_Power"] = st.text_input("Max Power (W)")
         spec_data["Input_Voltage"] = st.text_input("Input voltage (V)")
         spec_data["Input_Current"] = st.text_input("Input current (A)")
@@ -130,7 +155,9 @@ def render_spec_info():
         spec_data["Tone"] = st.text_input("Tone")
         spec_data["Sone"] = st.text_input("Sone")
         spec_data["Weight"] = st.text_input("Weight (g)")
-        spec_data["Connector"] = st.text_input("端子頭型號、線序、出框線長")
+        spec_data["Connector_Type"] = st.text_input("端子頭型號")
+        spec_data["Connector_Pin"] = st.text_input("線序")
+        spec_data["Connector_Length"] = st.text_input("出框線長")
 
     elif spec_option == "Liquid Cooling":
         spec_data["Plate_Form"] = st.text_input("Plate Form")
@@ -141,7 +168,7 @@ def render_spec_info():
         spec_data["Chip_Size"] = st.text_input("Chip contact size LxWxH (mm)")
         spec_data["Thermal_Resistance"] = st.text_input("Thermal Resistance (°C/W)")
         spec_data["Flow_Rate"] = st.text_input("Flow rate (LPM)")
-        spec_data["Impedance"] = st.text_input("Impedance (Kpa)")
+        spec_data["Impedance"] = st.text_input("Impedance (KPa)")  # ✅ 修正大小寫
         spec_data["Max_Loading"] = st.text_input("Max loading (lbs)")
 
     return spec_data
