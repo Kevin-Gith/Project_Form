@@ -199,6 +199,12 @@ def main():
     else:
         st.title("🖥️ Kipo專案申請系統")
 
+        # 登出按鈕
+        if st.button("登出"):
+            st.session_state["logged_in"] = False
+            st.session_state["user"] = ""
+            st.rerun()
+
         customer_info = render_customer_info()
         project_info = render_project_info()
         spec_info = render_spec_info()
@@ -209,9 +215,29 @@ def main():
             if missing_fields:
                 st.error("❌ 客戶資訊或開案資訊未填寫完成，請重新確認")
             else:
-                record = {**customer_info, **project_info, **spec_info}
-                record["Application_Deadline"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
-                sheet.append_row(list(record.values()))
+                # 固定欄位順序
+                new_row = [
+                    customer_info["Sales_User"],
+                    customer_info["ODM_Customers"],
+                    customer_info["Brand_Customers"],
+                    customer_info["Application_Purpose"],
+                    customer_info["Project_Name"],
+                    customer_info["Proposal_Date"],
+                    project_info["Product_Application"],
+                    project_info["Cooling_Solution"],
+                    project_info["Delivery_Location"],
+                    project_info["Sample_Date"],
+                    project_info["Sample_Qty"],
+                    project_info["Demand_Qty"],
+                    project_info["SI"],
+                    project_info["PV"],
+                    project_info["MV"],
+                    project_info["MP"],
+                    spec_info["Spec_Type"],
+                    "=NOW()"  # Google Sheet 自動填時間
+                ]
+
+                sheet.append_row(new_row, value_input_option="USER_ENTERED")
                 st.success("✅ 表單已送出並記錄到 Google Sheet！")
 
 if __name__ == "__main__":
