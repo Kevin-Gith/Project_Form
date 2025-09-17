@@ -7,11 +7,26 @@ import datetime
 SHEET_NAME = "Project_Form"
 WORKSHEET_NAME = "Python"
 
-# 使用 Streamlit Cloud secrets 儲存金鑰
-creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"])
-client = gspread.authorize(creds)
-sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
+# 明確設定 scope
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
 
+creds = Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"],
+    scopes=SCOPES
+)
+
+client = gspread.authorize(creds)
+sheet = client.open("Project_Form").worksheet("Python")
+
+try:
+    first_row = sheet.row_values(1)
+    st.success("✅ 已成功連線到 Google Sheet")
+    st.write("第一列資料：", first_row)
+except Exception as e:
+    st.error(f"❌ 連線失敗: {e}")
 
 # ========== Function：A. 客戶資訊 ==========
 def render_customer_info():
