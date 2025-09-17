@@ -7,7 +7,6 @@ import datetime
 SHEET_NAME = "Project_Form"
 WORKSHEET_NAME = "Python"
 
-# 明確設定 scope
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
@@ -17,30 +16,54 @@ creds = Credentials.from_service_account_info(
     st.secrets["gcp_service_account"],
     scopes=SCOPES
 )
-
 client = gspread.authorize(creds)
 sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
 
+# ========== 使用者帳號密碼 ==========
+USER_CREDENTIALS = {
+    "sam": "1234",
+    "vivian": "abcd",
+    "wendy": "pass123",
+    "lillian": "0000"
+}
+
+# ========== Function：登入頁 ==========
+def login_page():
+    st.title("🔐 使用者登入")
+
+    username = st.text_input("帳號")
+    password = st.text_input("密碼", type="password")
+
+    if st.button("登入"):
+        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+            st.session_state["logged_in"] = True
+            st.session_state["user"] = username
+            st.success("登入成功！")
+            st.experimental_rerun()
+        else:
+            st.error("帳號或密碼錯誤！")
 
 # ========== Function：A. 客戶資訊 ==========
 def render_customer_info():
     st.header("A. 客戶資訊")
 
     user_mapping = {
-        "sam@company.com": "Sam",
-        "vivian@company.com": "Vivian",
-        "wendy@company.com": "Wendy",
-        "lillian@company.com": "Lillian"
+        "sam": "Sam",
+        "vivian": "Vivian",
+        "wendy": "Wendy",
+        "lillian": "Lillian"
     }
-    current_user = "sam@company.com"  # ⚠️ 未來可改成實際登入帳號
-    sales_user = user_mapping.get(current_user, "Unknown")
+    sales_user = user_mapping.get(st.session_state.get("user"), "Unknown")
 
     odm = st.text_input("ODM 客戶 (RD)")
     brand = st.text_input("品牌客戶 (RD)")
     applicant = st.text_input("申請人", sales_user)
 
-    return odm, brand, applicant
-
+    return {
+        "ODM_Customers": odm,
+        "Brand_Customers": brand,
+        "Applicant": applicant
+    }
 
 # ========== Function：B. 開案資訊 ==========
 def render_project_info():
@@ -68,13 +91,23 @@ def render_project_info():
 
     demand_qty = st.text_input("需求量 (預估數量/總年數)")
 
-    return purpose, product_app, cooling, delivery, sample_date, sample_qty, si, pv, mv, mp, demand_qty
-
+    return {
+        "Application_Purpose": purpose,
+        "Product_Application": product_app,
+        "Cooling_Solution": cooling,
+        "Delivery_Location": delivery,
+        "Sample_Date": sample_date.strftime("%Y/%m/%d"),
+        "Sample_Qty": sample_qty,
+        "SI": si,
+        "PV": pv,
+        "MV": mv,
+        "MP": mp,
+        "Demand_Qty": demand_qty
+    }
 
 # ========== Function：C. 規格資訊 ==========
 def render_spec_info():
     st.header("C. 規格資訊")
-
     spec_option = st.selectbox("Cooling Solution", ["Air Cooling", "Fan", "Liquid Cooling"])
     spec_data = {"Spec_Type": spec_option}
 
@@ -112,39 +145,25 @@ def render_spec_info():
 
     return spec_data
 
-
-# ========== 主程式入口 ==========
+# ========== 主程式 ==========
 def main():
-    st.title("📌 Project Form 系統")
+    if "logged_in" not in st.session_state:
+        st.session_state["logged_in"] = False
 
-    odm, brand, applicant = render_customer_info()
-    purpose, product_app, cooling, delivery, sample_date, sample_qty, si, pv, mv, mp, demand_qty = render_project_info()
-    spec_info = render_spec_info()
+    if not st.session_state["logged_in"]:
+        login_page()
+    else:
+        st.title("📌 Project Form 系統")
 
-    if st.button("完成"):
-        # 固定欄位順序
-        record = [
-            odm,
-            brand,
-            purpose,
-            product_app,
-            cooling,
-            delivery,
-            applicant,
-            datetime.datetime.now().strftime("%Y/%m/%d %H:%M"),
-            sample_date.strftime("%Y/%m/%d"),
-            sample_qty,
-            si,
-            pv,
-            mv,
-            mp,
-            demand_qty,
-            spec_info  # ⚠️ 先暫存整包 Spec dict，如果要展開要在 Sheet 先定義好欄位
-        ]
+        customer_info = render_customer_info()
+        project_info = render_project_info()
+        spec_info = render_spec_info()
 
-        sheet.append_row(record)
-        st.success("✅ 表單已送出並記錄到 Google Sheet！")
-
+        if st.button("完成"):
+            record = {**customer_info, **project_info, **spec_info}
+            record["Application_Deadline"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+            sheet.append_row(list(record.values()))
+            st.success("✅ 表單已送出並記錄到 Google Sheet！")
 
 if __name__ == "__main__":
     main()
