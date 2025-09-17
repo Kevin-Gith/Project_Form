@@ -19,20 +19,13 @@ creds = Credentials.from_service_account_info(
 )
 
 client = gspread.authorize(creds)
-sheet = client.open("Project_Form").worksheet("Python")
+sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
 
-try:
-    first_row = sheet.row_values(1)
-    st.success("✅ 已成功連線到 Google Sheet")
-    st.write("第一列資料：", first_row)
-except Exception as e:
-    st.error(f"❌ 連線失敗: {e}")
 
 # ========== Function：A. 客戶資訊 ==========
 def render_customer_info():
     st.header("A. 客戶資訊")
 
-    # 模擬登入帳號對應業務
     user_mapping = {
         "sam@company.com": "Sam",
         "vivian@company.com": "Vivian",
@@ -46,11 +39,7 @@ def render_customer_info():
     brand = st.text_input("品牌客戶 (RD)")
     applicant = st.text_input("申請人", sales_user)
 
-    return {
-        "ODM_Customers": odm,
-        "Brand_Customers": brand,
-        "Applicant": applicant
-    }
+    return odm, brand, applicant
 
 
 # ========== Function：B. 開案資訊 ==========
@@ -68,7 +57,6 @@ def render_project_info():
 
     delivery = st.text_input("交貨地點")
 
-    # 新增需求
     sample_date = st.date_input("樣品需求日期", value=datetime.date.today())
     sample_qty = st.number_input("樣品需求數量", min_value=1, step=1)
 
@@ -80,19 +68,7 @@ def render_project_info():
 
     demand_qty = st.text_input("需求量 (預估數量/總年數)")
 
-    return {
-        "Application_Purpose": purpose,
-        "Product_Application": product_app,
-        "Cooling_Solution": cooling,
-        "Delivery_Location": delivery,
-        "Sample_Date": sample_date.strftime("%Y/%m/%d"),
-        "Sample_Qty": sample_qty,
-        "SI": si,
-        "PV": pv,
-        "MV": mv,
-        "MP": mp,
-        "Demand_Qty": demand_qty
-    }
+    return purpose, product_app, cooling, delivery, sample_date, sample_qty, si, pv, mv, mp, demand_qty
 
 
 # ========== Function：C. 規格資訊 ==========
@@ -100,7 +76,6 @@ def render_spec_info():
     st.header("C. 規格資訊")
 
     spec_option = st.selectbox("Cooling Solution", ["Air Cooling", "Fan", "Liquid Cooling"])
-
     spec_data = {"Spec_Type": spec_option}
 
     if spec_option == "Air Cooling":
@@ -142,19 +117,32 @@ def render_spec_info():
 def main():
     st.title("📌 Project Form 系統")
 
-    # 三個區塊
-    customer_info = render_customer_info()
-    project_info = render_project_info()
+    odm, brand, applicant = render_customer_info()
+    purpose, product_app, cooling, delivery, sample_date, sample_qty, si, pv, mv, mp, demand_qty = render_project_info()
     spec_info = render_spec_info()
 
     if st.button("完成"):
-        # 組合所有資料
-        record = {**customer_info, **project_info, **spec_info}
-        record["Application_Deadline"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+        # 固定欄位順序
+        record = [
+            odm,
+            brand,
+            purpose,
+            product_app,
+            cooling,
+            delivery,
+            applicant,
+            datetime.datetime.now().strftime("%Y/%m/%d %H:%M"),
+            sample_date.strftime("%Y/%m/%d"),
+            sample_qty,
+            si,
+            pv,
+            mv,
+            mp,
+            demand_qty,
+            spec_info  # ⚠️ 先暫存整包 Spec dict，如果要展開要在 Sheet 先定義好欄位
+        ]
 
-        # 寫入 Google Sheet
-        sheet.append_row(list(record.values()))
-
+        sheet.append_row(record)
         st.success("✅ 表單已送出並記錄到 Google Sheet！")
 
 
