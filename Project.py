@@ -21,10 +21,10 @@ sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
 
 # ========== 使用者帳號密碼 ==========
 USER_CREDENTIALS = {
-    "sam": "1234",
-    "vivian": "abcd",
-    "wendy": "pass123",
-    "lillian": "0000"
+    "sam@kipotec.com.tw": "Kipo-0926969586$$$",
+    "sale1@kipotec.com.tw": "Kipo-0917369466$$$",
+    "sale5@kipotec.com.tw": "Kipo-0925698417$$$",
+    "sale2@kipotec.com.tw": "Kipo-0905038111$$$"
 }
 
 # ========== Function：登入頁 ==========
@@ -39,7 +39,8 @@ def login_page():
             st.session_state["logged_in"] = True
             st.session_state["user"] = username
             st.success("登入成功！")
-            st.experimental_rerun()
+            st.rerun()
+            
         else:
             st.error("帳號或密碼錯誤！")
 
