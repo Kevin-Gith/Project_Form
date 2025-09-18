@@ -55,6 +55,10 @@ def save_to_google_sheet(record):
 
 # ========== 匯出到 Excel 模板 ==========
 def export_to_template(record):
+    import io
+    from openpyxl import load_workbook
+    import os
+
     template_path = os.path.join(os.path.dirname(__file__), "Kipo_Project_Form.xlsx")
     wb = load_workbook(template_path)
     ws = wb.active  # 預設第一個工作表
@@ -79,15 +83,24 @@ def export_to_template(record):
     ws["B15"] = record.get("MV", "")
     ws["E15"] = record.get("MP", "")
 
-    # C. 規格資訊 → 合併文字到 A17
-    spec_text = []
-    for section, fields in record.get("Spec_Type", {}).items():
-        spec_text.append(f"【{section}】")
-        for k, v in fields.items():
-            spec_text.append(f"{k}: {v}")
-    ws["A17"] = "\n".join(spec_text)
+    # C. 規格資訊 → 各方案分欄
+    spec_map = {
+        "Air Cooling氣冷": "A17",
+        "Fan風扇": "C17",
+        "Liquid Cooling水冷": "E17"
+    }
 
-    # 存到記憶體 BytesIO，提供下載
+    for section, fields in record.get("Spec_Type", {}).items():
+        text_lines = [f"【{section}】"]
+        for k, v in fields.items():
+            if v:  # 有輸入才寫入
+                text_lines.append(f"{k}: {v}")
+        text_value = "\n".join(text_lines)
+
+        if section in spec_map:
+            ws[spec_map[section]] = text_value
+
+    # 存到 BytesIO
     output = io.BytesIO()
     wb.save(output)
     return output.getvalue()
