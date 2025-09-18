@@ -82,33 +82,22 @@ def export_to_template(record):
 
     # ====== C. 規格資訊 ======
     spec_map = {
-        "Air Cooling氣冷": ("A", 17),
-        "Fan風扇": ("C", 17),
-        "Liquid Cooling水冷": ("E", 17)
+        "Air Cooling氣冷": "A17",
+        "Fan風扇": "C17",
+        "Liquid Cooling水冷": "E17"
     }
 
     for section, fields in record.get("Spec_Type", {}).items():
         if section in spec_map:
-            col_letter, start_row = spec_map[section]
-            try:
-                row = int(start_row)
-                col_index = column_index_from_string(str(col_letter))
-            except Exception as e:
-                st.error(f"欄位轉換失敗: {col_letter}{start_row}, 錯誤: {e}")
-                continue
-
-            # 標題
-            ws.cell(row=row, column=col_index, value=section)
-            row += 1
-
-            # 每個欄位
+            # 把整個區塊組成文字
+            lines = [section]  # 先放標題
             for k, v in fields.items():
                 value = v if v not in ["", None] else ""
-                try:
-                    ws.cell(row=row, column=col_index, value=f"{k}: {value}")
-                except Exception as e:
-                    st.error(f"寫入失敗: {col_letter}{row}, 欄位 {k}, 錯誤: {e}")
-                row += 1
+                lines.append(f"{k}: {value}")
+            text_value = "\n".join(lines)
+
+            # 一次寫入起始格（合併區左上角）
+            ws[spec_map[section]] = text_value
 
     # 匯出
     output = io.BytesIO()
