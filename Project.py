@@ -101,11 +101,12 @@ def render_project_info():
     sample_qty = st.text_input("樣品需求數量", key="sample_qty")
     demand_qty = st.text_input("需求量 (預估數量/總年數)", key="demand_qty")
 
-    st.subheader("Schedule")
-    si = st.text_input("SI", key="si")
-    pv = st.text_input("PV", key="pv")
-    mv = st.text_input("MV", key="mv")
-    mp = st.text_input("MP", key="mp")
+    st.markdown("**Schedule**")
+    col1, col2, col3, col4 = st.columns(4)
+    si = col1.text_input("SI", key="si")
+    pv = col2.text_input("PV", key="pv")
+    mv = col3.text_input("MV", key="mv")
+    mp = col4.text_input("MP", key="mp")
 
     return {
         "Product_Application": product_app,
@@ -205,14 +206,12 @@ def preview_page():
     record = st.session_state["record"]
 
     st.subheader("A. 客戶資訊")
-    for k, v in record.items():
-        if k in ["Sales_User", "ODM_Customers", "Brand_Customers", "Application_Purpose", "Project_Name", "Proposal_Date"]:
-            st.write(f"**{k}：** {v}")
+    for k in ["Sales_User", "ODM_Customers", "Brand_Customers", "Application_Purpose", "Project_Name", "Proposal_Date"]:
+        st.write(f"**{k}：** {record.get(k, '')}")
 
     st.subheader("B. 開案資訊")
-    for k, v in record.items():
-        if k in ["Product_Application", "Cooling_Solution", "Delivery_Location", "Sample_Date", "Sample_Qty", "Demand_Qty", "SI", "PV", "MV", "MP"]:
-            st.write(f"**{k}：** {v}")
+    for k in ["Product_Application", "Cooling_Solution", "Delivery_Location", "Sample_Date", "Sample_Qty", "Demand_Qty", "SI", "PV", "MV", "MP"]:
+        st.write(f"**{k}：** {record.get(k, '')}")
 
     st.subheader("C. 規格資訊")
     for section, fields in record["Spec_Type"].items():
