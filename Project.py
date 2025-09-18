@@ -1,6 +1,7 @@
 import streamlit as st
 import gspread
 import pandas as pd
+import json
 from google.oauth2.service_account import Credentials
 import datetime
 
@@ -20,6 +21,14 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
 
+# 固定 Google Sheet 欄位順序
+SHEET_HEADERS = [
+    "Sales_User", "ODM_Customers", "Brand_Customers", "Application_Purpose",
+    "Project_Name", "Proposal_Date", "Product_Application", "Cooling_Solution",
+    "Delivery_Location", "Sample_Date", "Sample_Qty", "Demand_Qty",
+    "SI", "PV", "MV", "MP", "Spec_Type", "Update_Time"
+]
+
 # ========== 使用者帳號密碼 ==========
 USER_CREDENTIALS = {
     "sam@kipotec.com.tw": {"password": "Kipo-0926969586$$$", "name": "Sam"},
@@ -36,6 +45,20 @@ def logout():
             del st.session_state[key]
     st.session_state["page"] = "login"
     st.session_state["logged_in"] = False
+
+# ========== 儲存到 Google Sheet ==========
+def save_to_google_sheet(record):
+    # 把 Spec_Type 轉成字串 (JSON 格式，方便日後還原)
+    record["Spec_Type"] = json.dumps(record.get("Spec_Type", {}), ensure_ascii=False)
+
+    # 建立時間
+    record["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+
+    # 按照固定欄位順序取值
+    row = [record.get(col, "") for col in SHEET_HEADERS]
+
+    # 寫入 Google Sheet
+    sheet.append_row(row)
 
 # ========== 頁面：登入 ==========
 def login_page():
@@ -223,9 +246,7 @@ def preview_page():
     if col1.button("🔙 返回修改"):
         st.session_state["page"] = "form"
     if col2.button("💾 確認送出"):
-        now = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
-        record["建立時間"] = now
-        sheet.append_row(list(record.values()))
+        save_to_google_sheet(record)
         st.success("✅ 已寫入 Google Sheet！")
 
 # ========== 主程式 ==========
