@@ -2,6 +2,7 @@ import streamlit as st
 import gspread
 import pandas as pd
 import io
+import openpyxl
 from google.oauth2.service_account import Credentials
 import datetime
 
@@ -21,7 +22,6 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
 
-# 固定 Google Sheet 欄位順序
 SHEET_HEADERS = [
     "Sales_User", "ODM_Customers", "Brand_Customers", "Application_Purpose",
     "Project_Name", "Proposal_Date", "Product_Application", "Cooling_Solution",
@@ -48,13 +48,50 @@ def logout():
 
 # ========== 儲存到 Google Sheet ==========
 def save_to_google_sheet(record):
-    record_for_sheet = record.copy()
-    record_for_sheet["Spec_Type"] = ", ".join(record.get("Spec_Type", {}).keys())
-    record_for_sheet["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
-    row = [record_for_sheet.get(col, "") for col in SHEET_HEADERS]
+    record["Spec_Type"] = ", ".join(record.get("Spec_Type", {}).keys())
+    record["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+    row = [record.get(col, "") for col in SHEET_HEADERS]
     sheet.append_row(row)
 
-# ========== 頁面：登入 ==========
+# ========== 匯出 Excel（使用範本） ==========
+def export_to_excel_with_template(record):
+    wb = openpyxl.load_workbook("Kipo_開案申請表 - 0918.xlsx")
+    ws = wb.active
+
+    # A. 客戶資訊
+    ws["B6"] = f"北辦業務：{record.get('Sales_User','')}"
+    ws["B7"] = record.get("ODM_Customers", "")
+    ws["E7"] = record.get("Brand_Customers", "")
+    ws["B8"] = record.get("Project_Name", "")
+    ws["E8"] = record.get("Proposal_Date", "")
+    ws["B9"] = record.get("Application_Purpose", "")
+
+    # B. 開案資訊
+    ws["B11"] = record.get("Product_Application", "")
+    ws["E11"] = record.get("Cooling_Solution", "")
+    ws["B12"] = record.get("Sample_Date", "")
+    ws["E12"] = record.get("Sample_Qty", "")
+    ws["B13"] = record.get("Demand_Qty", "")
+    ws["E13"] = record.get("Delivery_Location", "")
+    ws["B14"] = record.get("SI", "")
+    ws["E14"] = record.get("PV", "")
+    ws["B15"] = record.get("MV", "")
+    ws["E15"] = record.get("MP", "")
+
+    # C. 規格資訊
+    row = 17
+    for section, fields in record["Spec_Type"].items():
+        ws[f"A{row}"] = section
+        row += 1
+        for k, v in fields.items():
+            ws[f"A{row}"] = f"{k}：{v}"
+            row += 1
+
+    output = io.BytesIO()
+    wb.save(output)
+    return output.getvalue()
+
+# ========== 登入頁 ==========
 def login_page():
     st.title("💻 Kipo專案申請系統")
 
@@ -69,23 +106,20 @@ def login_page():
         else:
             st.error("帳號或密碼錯誤，請重新輸入")
 
-# ========== 頁面：A. 客戶資訊 ==========
+# ========== A. 客戶資訊 ==========
 def render_customer_info():
-    # 在標題上方先顯示北辦業務
-    st.write(f"### 北辦業務：{st.session_state.get('user','')}")
-
-    # 再顯示 A. 客戶資訊標題
+    st.subheader(f"北辦業務：{st.session_state.get('user','')}")
     st.header("A. 客戶資訊")
 
-    odm = st.selectbox("ODM客戶 (RD)", ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)其他"], key="odm")
+    odm = st.selectbox("ODM客戶 (RD)", ["", "(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)其他"], key="odm")
     if odm == "(08)其他":
         odm = st.text_input("請輸入ODM客戶", key="odm_other")
 
-    brand = st.selectbox("品牌客戶 (RD)", ["(01)惠普", "(02)聯想", "(03)高通", "(04)華碩", "(05)宏碁", "(06)微星", "(07)技嘉", "(08)其他"], key="brand")
+    brand = st.selectbox("品牌客戶 (RD)", ["", "(01)惠普", "(02)聯想", "(03)高通", "(04)華碩", "(05)宏碁", "(06)微星", "(07)技嘉", "(08)其他"], key="brand")
     if brand == "(08)其他":
         brand = st.text_input("請輸入品牌客戶", key="brand_other")
 
-    purpose = st.selectbox("申請目的", ["(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(04)其他"], key="purpose")
+    purpose = st.selectbox("申請目的", ["", "(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(04)其他"], key="purpose")
     if purpose == "(04)其他":
         purpose = st.text_input("請輸入申請目的", key="purpose_other")
 
@@ -101,19 +135,19 @@ def render_customer_info():
         "Proposal_Date": proposal_date.strftime("%Y/%m/%d")
     }
 
-# ========== 頁面：B. 開案資訊 ==========
+# ========== B. 開案資訊 ==========
 def render_project_info():
     st.header("B. 開案資訊")
 
-    product_app = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Other"], key="product_app")
+    product_app = st.selectbox("產品應用", ["", "(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Other"], key="product_app")
     if product_app == "(05)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
 
-    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Cooler(含Fan)", "(04)Liquid Cooling", "(05)Other"], key="cooling")
+    cooling = st.selectbox("散熱方式", ["", "(01)Air Cooling", "(02)Fan", "(03)Cooler(含Fan)", "(04)Liquid Cooling", "(05)Other"], key="cooling")
     if cooling == "(05)Other":
         cooling = st.text_input("請輸入散熱方式", key="cooling_other")
 
-    delivery = st.selectbox("交貨地點", ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"], key="delivery")
+    delivery = st.selectbox("交貨地點", ["", "(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"], key="delivery")
     if delivery == "(05)Other":
         delivery = st.text_input("請輸入交貨地點", key="delivery_other")
 
@@ -121,7 +155,7 @@ def render_project_info():
     sample_qty = st.text_input("樣品需求數量", key="sample_qty")
     demand_qty = st.text_input("需求量 (預估數量/總年數)", key="demand_qty")
 
-    st.text("需求進度 (Schedule)")
+    st.text("Schedule")
     col1, col2, col3, col4 = st.columns(4)
     si = col1.text_input("SI", key="si")
     pv = col2.text_input("PV", key="pv")
@@ -141,7 +175,7 @@ def render_project_info():
         "MP": mp
     }
 
-# ========== 頁面：C. 規格資訊 ==========
+# ========== C. 規格資訊 ==========
 def render_spec_info():
     st.header("C. 規格資訊")
     spec_options = st.multiselect("選擇散熱方案", ["Air Cooling氣冷", "Fan風扇", "Liquid Cooling水冷"], key="spec_options")
@@ -149,7 +183,7 @@ def render_spec_info():
 
     if "Air Cooling氣冷" in spec_options:
         st.subheader("Air Cooling氣冷")
-        spec_data["Air Cooling氣冷"] = {
+        spec_data["Air Cooling"] = {
             "Air_Flow": st.text_input("Air Flow (RPM/Voltage/CFM)", key="air_flow"),
             "Tcase_Max": st.text_input("Tcase_Max (°C)", key="air_tcase"),
             "Thermal_Resistance": st.text_input("Thermal Resistance (°C/W)", key="air_res"),
@@ -161,7 +195,7 @@ def render_spec_info():
 
     if "Fan風扇" in spec_options:
         st.subheader("Fan風扇")
-        spec_data["Fan風扇"] = {
+        spec_data["Fan"] = {
             "Length": st.text_input("Length (mm)", key="fan_len"),
             "Width": st.text_input("Width (mm)", key="fan_wid"),
             "Height": st.text_input("Height (mm)", key="fan_hei"),
@@ -181,7 +215,7 @@ def render_spec_info():
 
     if "Liquid Cooling水冷" in spec_options:
         st.subheader("Liquid Cooling水冷")
-        spec_data["Liquid Cooling水冷"] = {
+        spec_data["Liquid Cooling"] = {
             "Plate_Form": st.text_input("Plate Form", key="liq_plate"),
             "Max_Power": st.text_input("Max Power (W)", key="liq_max_power"),
             "Tj_Max": st.text_input("Tj_Max (°C)", key="liq_tj"),
@@ -198,12 +232,8 @@ def render_spec_info():
 
     return spec_data
 
-# ========== 頁面：表單 ==========
+# ========== 表單頁 ==========
 def form_page():
-    if not st.session_state.get("logged_in", False):
-        st.session_state["page"] = "login"
-        return
-
     st.title("💻 Kipo專案申請系統")
     if st.button("🚪 登出"):
         logout()
@@ -213,12 +243,11 @@ def form_page():
     spec_info = render_spec_info()
 
     if st.button("✅ 完成"):
-        # A、B 必填檢查
-        if any(v in ["", None] for v in customer_info.values()):
+        if not all(customer_info.values()):
             st.error("客戶資訊未完成填寫，請重新確認")
-        elif any(v in ["", None] for v in project_info.values()):
+        elif not all(project_info.values()):
             st.error("開案資訊未完成填寫，請重新確認")
-        elif not spec_info:  # C 至少一種方案
+        elif not spec_info:
             st.error("規格資訊請至少選擇一種方案")
         else:
             st.session_state["record"] = {
@@ -226,49 +255,30 @@ def form_page():
             }
             st.session_state["page"] = "preview"
 
-# ========== 頁面：預覽 ==========
+# ========== 預覽頁 ==========
 def preview_page():
     st.title("📋 預覽填寫內容")
 
     record = st.session_state.get("record", {})
 
-    # 先顯示北辦業務
-    st.write(f"### 北辦業務：{record.get('Sales_User','')}")
-
-    # A. 客戶資訊
     st.subheader("A. 客戶資訊")
-    field_map_a = {
-        "ODM_Customers": "ODM客戶(RD)",
-        "Brand_Customers": "品牌客戶(RD)",
-        "Application_Purpose": "申請目的",
-        "Project_Name": "客戶專案名稱",
-        "Proposal_Date": "客戶提案日期"
-    }
-    for k, v in field_map_a.items():
-        st.write(f"**{v}：** {record.get(k, '')}")
+    st.write(f"**北辦業務：** {record.get('Sales_User','')}")
+    st.write(f"**ODM客戶(RD)：** {record.get('ODM_Customers','')}")
+    st.write(f"**品牌客戶(RD)：** {record.get('Brand_Customers','')}")
+    st.write(f"**申請目的：** {record.get('Application_Purpose','')}")
+    st.write(f"**客戶專案名稱：** {record.get('Project_Name','')}")
+    st.write(f"**客戶提案日期：** {record.get('Proposal_Date','')}")
 
-    # B. 開案資訊
     st.subheader("B. 開案資訊")
-    field_map_b = {
-        "Product_Application": "產品應用",
-        "Cooling_Solution": "散熱方式",
-        "Delivery_Location": "交貨地點",
-        "Sample_Date": "樣品需求日期",
-        "Sample_Qty": "樣品需求數量",
-        "Demand_Qty": "需求量(預估數量/總年數)",
-    }
-    for k, v in field_map_b.items():
-        st.write(f"**{v}：** {record.get(k, '')}")
+    st.write(f"**產品應用：** {record.get('Product_Application','')}")
+    st.write(f"**散熱方式：** {record.get('Cooling_Solution','')}")
+    st.write(f"**交貨地點：** {record.get('Delivery_Location','')}")
+    st.write(f"**樣品需求日期：** {record.get('Sample_Date','')}")
+    st.write(f"**樣品需求數量：** {record.get('Sample_Qty','')}")
+    st.write(f"**需求量(預估數量/總年數)：** {record.get('Demand_Qty','')}")
+    st.write("**Schedule**")
+    st.write(f"SI：{record.get('SI','')}   PV：{record.get('PV','')}   MV：{record.get('MV','')}   MP：{record.get('MP','')}")
 
-    # Schedule 獨立小標題
-    st.markdown("#### Schedule")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.write(f"**SI：** {record.get('SI','')}")
-    col2.write(f"**PV：** {record.get('PV','')}")
-    col3.write(f"**MV：** {record.get('MV','')}")
-    col4.write(f"**MP：** {record.get('MP','')}")
-
-    # C. 規格資訊
     st.subheader("C. 規格資訊")
     for section, fields in record["Spec_Type"].items():
         st.markdown(f"**{section}**")
@@ -281,21 +291,13 @@ def preview_page():
 
     if col2.button("💾 確認送出"):
         save_to_google_sheet(record)
-
-        # 匯出 Excel
-        df = pd.DataFrame([record])
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, sheet_name="ProjectForm")
-        excel_data = output.getvalue()
-
+        excel_data = export_to_excel_with_template(record)
         st.download_button(
             label="⬇️ 下載Excel檔案",
             data=excel_data,
             file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
         st.success("✅ 已下載Excel檔案並記錄到Google Sheet！")
 
 # ========== 主程式 ==========
