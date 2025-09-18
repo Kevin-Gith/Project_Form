@@ -146,23 +146,25 @@ def render_project_info():
 def render_spec_info():
     st.header("C. 規格資訊")
 
-    spec_option = st.selectbox("散熱方案", ["Air Cooling氣冷", "Fan風扇", "Liquid Cooling水冷"])
-    spec_data = {"Spec_Type": spec_option}
+    spec_options = st.multiselect("選擇散熱方案", ["Air Cooling氣冷", "Fan風扇", "Liquid Cooling水冷"])
+    spec_data = {}
 
-    if spec_option == "Air Cooling氣冷":
+    if "Air Cooling氣冷" in spec_options:
+        st.subheader("Air Cooling氣冷")
         spec_data["Air_Flow"] = st.text_input("Air Flow (RPM/Voltage/CFM)")
         spec_data["Tcase_Max"] = st.text_input("Tcase_Max (°C)")
         spec_data["Thermal_Resistance"] = st.text_input("Thermal Resistance (°C/W)")
         spec_data["Max_Power"] = st.text_input("Max Power (W)")
-        spec_data["Length"] = st.text_input("Length (mm)")
-        spec_data["Width"] = st.text_input("Width (mm)")
-        spec_data["Height"] = st.text_input("Height (mm)")
+        spec_data["Length_Air"] = st.text_input("Length (mm)")
+        spec_data["Width_Air"] = st.text_input("Width (mm)")
+        spec_data["Height_Air"] = st.text_input("Height (mm)")
 
-    elif spec_option == "Fan風扇":
-        spec_data["Length"] = st.text_input("Length (mm)")
-        spec_data["Width"] = st.text_input("Width (mm)")
-        spec_data["Height"] = st.text_input("Height (mm)")
-        spec_data["Max_Power"] = st.text_input("Max Power (W)")
+    if "Fan風扇" in spec_options:
+        st.subheader("Fan風扇")
+        spec_data["Length_Fan"] = st.text_input("Length (mm)")
+        spec_data["Width_Fan"] = st.text_input("Width (mm)")
+        spec_data["Height_Fan"] = st.text_input("Height (mm)")
+        spec_data["Max_Power_Fan"] = st.text_input("Max Power (W)")
         spec_data["Input_Voltage"] = st.text_input("Input voltage (V)")
         spec_data["Input_Current"] = st.text_input("Input current (A)")
         spec_data["PQ"] = st.text_input("P-Q")
@@ -175,14 +177,15 @@ def render_spec_info():
         spec_data["Connector_Pin"] = st.text_input("線序")
         spec_data["Connector_Length"] = st.text_input("出框線長")
 
-    elif spec_option == "Liquid Cooling水冷":
+    if "Liquid Cooling水冷" in spec_options:
+        st.subheader("Liquid Cooling水冷")
         spec_data["Plate_Form"] = st.text_input("Plate Form")
-        spec_data["Max_Power"] = st.text_input("Max Power (W)")
+        spec_data["Max_Power_Liquid"] = st.text_input("Max Power (W)")
         spec_data["Tj_Max"] = st.text_input("Tj_Max (°C)")
-        spec_data["Tcase_Max"] = st.text_input("Tcase_Max (°C)")
+        spec_data["Tcase_Max_Liquid"] = st.text_input("Tcase_Max (°C)")
         spec_data["T_Inlet"] = st.text_input("T_Inlet (°C)")
         spec_data["Chip_Size"] = st.text_input("Chip contact size LxWxH (mm)")
-        spec_data["Thermal_Resistance"] = st.text_input("Thermal Resistance (°C/W)")
+        spec_data["Thermal_Resistance_Liquid"] = st.text_input("Thermal Resistance (°C/W)")
         spec_data["Flow_Rate"] = st.text_input("Flow rate (LPM)")
         spec_data["Impedance"] = st.text_input("Impedance (KPa)")
         spec_data["Max_Loading"] = st.text_input("Max loading (lbs)")
@@ -226,9 +229,11 @@ def preview_page():
     # --- C. 規格資訊 ---
     st.subheader("C. 規格資訊")
     for key, value in form_data.items():
-        if key not in ["Sales_User","ODM_Customers","Brand_Customers","Application_Purpose","Project_Name","Proposal_Date",
-                       "Product_Application","Cooling_Solution","Delivery_Location","Sample_Date","Sample_Qty","Demand_Qty",
-                       "Schedule_SI","Schedule_PV","Schedule_MV","Schedule_MP","建立時間"]:
+        if key not in [
+            "Sales_User","ODM_Customers","Brand_Customers","Application_Purpose","Project_Name","Proposal_Date",
+            "Product_Application","Cooling_Solution","Delivery_Location","Sample_Date","Sample_Qty","Demand_Qty",
+            "Schedule_SI","Schedule_PV","Schedule_MV","Schedule_MP","建立時間"
+        ]:
             st.write(f"**{key}**: {value}")
 
     st.markdown("---")
@@ -243,7 +248,7 @@ def preview_page():
                 st.download_button("⬇️ 下載 Excel", f, file_name=filename)
             st.success("✅ 已送出並記錄到 Google Sheet！")
     with col2:
-        if st.button("❌ 取消"):
+        if st.button("🔙 返回修改"):
             st.session_state["preview_mode"] = False
             st.rerun()
 
