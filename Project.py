@@ -56,10 +56,6 @@ def save_to_google_sheet(record):
 
 # ========== 匯出到 Excel 模板 ==========
 def export_to_template(record):
-    import io
-    from openpyxl import load_workbook
-    import os
-
     template_path = os.path.join(os.path.dirname(__file__), "Kipo_Project_Form.xlsx")
     wb = load_workbook(template_path)
     ws = wb.active  # 預設第一個工作表
@@ -85,7 +81,6 @@ def export_to_template(record):
     ws["E15"] = record.get("MP", "")
 
     # ====== C. 規格資訊 ======
-    # 每一類型對應起始欄位與列號
     spec_map = {
         "Air Cooling氣冷": ("A", 17),
         "Fan風扇": ("C", 17),
@@ -94,9 +89,13 @@ def export_to_template(record):
 
     for section, fields in record.get("Spec_Type", {}).items():
         if section in spec_map:
-            col, start_row = spec_map[section]
-            row = int(start_row)  # 確保 row 是 int
-            col_index = column_index_from_string(col)  # 確保 col 是 int
+            col_letter, start_row = spec_map[section]
+            try:
+                row = int(start_row)
+                col_index = column_index_from_string(str(col_letter))
+            except Exception as e:
+                st.error(f"欄位轉換失敗: {col_letter}{start_row}, 錯誤: {e}")
+                continue
 
             # 標題
             ws.cell(row=row, column=col_index, value=section)
@@ -105,10 +104,13 @@ def export_to_template(record):
             # 每個欄位
             for k, v in fields.items():
                 value = v if v not in ["", None] else ""
-                ws.cell(row=row, column=col_index, value=f"{k}: {value}")
+                try:
+                    ws.cell(row=row, column=col_index, value=f"{k}: {value}")
+                except Exception as e:
+                    st.error(f"寫入失敗: {col_letter}{row}, 欄位 {k}, 錯誤: {e}")
                 row += 1
 
-    # 存到 BytesIO
+    # 匯出
     output = io.BytesIO()
     wb.save(output)
     return output.getvalue()
