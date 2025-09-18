@@ -1,5 +1,6 @@
 import streamlit as st
 import gspread
+import pandas as pd
 from google.oauth2.service_account import Credentials
 import datetime
 
@@ -34,9 +35,9 @@ USER_MAPPING = {
     "sale2@kipotec.com.tw": "Lillian"
 }
 
-# ========== Function：登入頁 ==========
+# ========== 登入頁 ==========
 def login_page():
-    st.title("🔐 Kipo專案申請系統")
+    st.title("💻 Kipo專案申請系統")
 
     username = st.text_input("帳號")
     password = st.text_input("密碼", type="password")
@@ -45,12 +46,11 @@ def login_page():
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
             st.session_state["logged_in"] = True
             st.session_state["user"] = username
-            st.success("登入成功！")
             st.rerun()
         else:
-            st.error("帳號或密碼錯誤，請重新輸入")
+            st.error("帳號或密碼錯誤，請重新輸入！")
 
-# ========== Function：A. 客戶資訊 ==========
+# ========== A. 客戶資訊 ==========
 def render_customer_info():
     st.header("A. 客戶資訊")
 
@@ -90,7 +90,7 @@ def render_customer_info():
         "Proposal_Date": proposal_date.strftime("%Y/%m/%d")
     }
 
-# ========== Function：B. 開案資訊 ==========
+# ========== B. 開案資訊 ==========
 def render_project_info():
     st.header("B. 開案資訊")
 
@@ -136,13 +136,13 @@ def render_project_info():
         "Sample_Date": sample_date.strftime("%Y/%m/%d"),
         "Sample_Qty": sample_qty,
         "Demand_Qty": demand_qty,
-        "SI": si,
-        "PV": pv,
-        "MV": mv,
-        "MP": mp
+        "Schedule_SI": si,
+        "Schedule_PV": pv,
+        "Schedule_MV": mv,
+        "Schedule_MP": mp
     }
 
-# ========== Function：C. 規格資訊 ==========
+# ========== C. 規格資訊 ==========
 def render_spec_info():
     st.header("C. 規格資訊")
 
@@ -189,56 +189,64 @@ def render_spec_info():
 
     return spec_data
 
+# ========== 預覽頁 ==========
+def preview_page():
+    st.title("📑 預覽申請內容")
+
+    form_data = st.session_state["form_data"]
+    df = pd.DataFrame([form_data])
+
+    st.table(df)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✅ 下載並送出"):
+            filename = f"Project_Form_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            df.to_excel(filename, index=False)
+
+            sheet.append_row(list(form_data.values()))
+
+            with open(filename, "rb") as f:
+                st.download_button("⬇️ 下載 Excel", f, file_name=filename)
+
+            st.success("✅ 已送出並記錄到 Google Sheet！")
+
+    with col2:
+        if st.button("❌ 取消"):
+            st.session_state["preview_mode"] = False
+            st.rerun()
+
+# ========== 表單頁 ==========
+def form_page():
+    st.title("📝 專案申請表單")
+
+    customer_info = render_customer_info()
+    project_info = render_project_info()
+    spec_info = render_spec_info()
+
+    if st.button("完成"):
+        form_data = {**customer_info, **project_info, **spec_info}
+        form_data["建立時間"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+        st.session_state["form_data"] = form_data
+        st.session_state["preview_mode"] = True
+        st.rerun()
+
 # ========== 主程式 ==========
 def main():
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
+    if "preview_mode" not in st.session_state:
+        st.session_state["preview_mode"] = False
+    if "form_data" not in st.session_state:
+        st.session_state["form_data"] = {}
 
     if not st.session_state["logged_in"]:
         login_page()
     else:
-        st.title("🖥️ Kipo專案申請系統")
-
-        # 登出按鈕
-        if st.button("登出"):
-            st.session_state["logged_in"] = False
-            st.session_state["user"] = ""
-            st.rerun()
-
-        customer_info = render_customer_info()
-        project_info = render_project_info()
-        spec_info = render_spec_info()
-
-        if st.button("完成"):
-            # 驗證必填欄位（A 與 B）
-            missing_fields = [k for k, v in {**customer_info, **project_info}.items() if not v]
-            if missing_fields:
-                st.error("❌ 客戶資訊或開案資訊未填寫完成，請重新確認")
-            else:
-                # 固定欄位順序
-                new_row = [
-                    customer_info["Sales_User"],
-                    customer_info["ODM_Customers"],
-                    customer_info["Brand_Customers"],
-                    customer_info["Application_Purpose"],
-                    customer_info["Project_Name"],
-                    customer_info["Proposal_Date"],
-                    project_info["Product_Application"],
-                    project_info["Cooling_Solution"],
-                    project_info["Delivery_Location"],
-                    project_info["Sample_Date"],
-                    project_info["Sample_Qty"],
-                    project_info["Demand_Qty"],
-                    project_info["SI"],
-                    project_info["PV"],
-                    project_info["MV"],
-                    project_info["MP"],
-                    spec_info["Spec_Type"],
-                    "=NOW()"  # Google Sheet 自動填時間
-                ]
-
-                sheet.append_row(new_row, value_input_option="USER_ENTERED")
-                st.success("✅ 表單已送出並記錄到 Google Sheet！")
+        if st.session_state["preview_mode"]:
+            preview_page()
+        else:
+            form_page()
 
 if __name__ == "__main__":
     main()
