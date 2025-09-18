@@ -95,20 +95,18 @@ def export_to_template(record):
     for section, fields in record.get("Spec_Type", {}).items():
         if section in spec_map:
             col, start_row = spec_map[section]
-            row = start_row
+            row = int(start_row)  # 確保 row 是 int
+            col_index = column_index_from_string(col)  # 確保 col 是 int
 
-            # 寫標題
-            ws[f"{col}{row}"] = section
+            # 標題
+            ws.cell(row=row, column=col_index, value=section)
             row += 1
 
-            # 寫每個欄位
+            # 每個欄位
             for k, v in fields.items():
                 value = v if v not in ["", None] else ""
-                # 轉換欄位字母 (A/C/E) → 欄位數字 (1/3/5)
-                col_index = column_index_from_string(col)
-                ws.cell(row=row, column=col_index).value = f"{k}: {value}"
+                ws.cell(row=row, column=col_index, value=f"{k}: {value}")
                 row += 1
-
 
     # 存到 BytesIO
     output = io.BytesIO()
