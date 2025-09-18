@@ -147,49 +147,50 @@ def render_spec_info():
                                   key="Selected_Specs")
     spec_data = {"Selected_Specs": spec_options}
 
-    # Air Cooling
+    if not spec_options:
+        st.info("👉 請先選擇散熱方案，才會顯示對應的輸入欄位")
+        return spec_data
+
     if "Air Cooling氣冷" in spec_options:
         st.subheader("Air Cooling氣冷")
-    spec_data["Air_Flow"] = st.text_input("Air Flow (RPM/Voltage/CFM)", key="Air_Flow")
-    spec_data["Tcase_Max"] = st.text_input("Tcase_Max (°C)", key="Tcase_Max")
-    spec_data["Thermal_Resistance"] = st.text_input("Thermal Resistance (°C/W)", key="Thermal_Resistance")
-    spec_data["Max_Power"] = st.text_input("Max Power (W)", key="Air_Max_Power")
-    spec_data["Length_Air"] = st.text_input("Length (mm)", key="Length_Air")
-    spec_data["Width_Air"] = st.text_input("Width (mm)", key="Width_Air")
-    spec_data["Height_Air"] = st.text_input("Height (mm)", key="Height_Air")
+        spec_data["Air_Flow"] = st.text_input("Air Flow (RPM/Voltage/CFM)", key="Air_Flow")
+        spec_data["Tcase_Max"] = st.text_input("Tcase_Max (°C)", key="Tcase_Max")
+        spec_data["Thermal_Resistance"] = st.text_input("Thermal Resistance (°C/W)", key="Thermal_Resistance")
+        spec_data["Max_Power"] = st.text_input("Max Power (W)", key="Air_Max_Power")
+        spec_data["Length_Air"] = st.text_input("Length (mm)", key="Length_Air")
+        spec_data["Width_Air"] = st.text_input("Width (mm)", key="Width_Air")
+        spec_data["Height_Air"] = st.text_input("Height (mm)", key="Height_Air")
 
-    # Fan
     if "Fan風扇" in spec_options:
         st.subheader("Fan風扇")
-    spec_data["Length_Fan"] = st.text_input("Length (mm)", key="Length_Fan")
-    spec_data["Width_Fan"] = st.text_input("Width (mm)", key="Width_Fan")
-    spec_data["Height_Fan"] = st.text_input("Height (mm)", key="Height_Fan")
-    spec_data["Max_Power_Fan"] = st.text_input("Max Power (W)", key="Fan_Max_Power")
-    spec_data["Input_Voltage"] = st.text_input("Input voltage (V)", key="Input_Voltage")
-    spec_data["Input_Current"] = st.text_input("Input current (A)", key="Input_Current")
-    spec_data["PQ"] = st.text_input("P-Q", key="PQ")
-    spec_data["Speed"] = st.text_input("Rotational speed (RPM)", key="Speed")
-    spec_data["Noise"] = st.text_input("Noise (dB)", key="Noise")
-    spec_data["Tone"] = st.text_input("Tone", key="Tone")
-    spec_data["Sone"] = st.text_input("Sone", key="Sone")
-    spec_data["Weight"] = st.text_input("Weight (g)", key="Weight")
-    spec_data["Connector_Type"] = st.text_input("端子頭型號", key="Connector_Type")
-    spec_data["Connector_Pin"] = st.text_input("線序", key="Connector_Pin")
-    spec_data["Connector_Length"] = st.text_input("出框線長", key="Connector_Length")
+        spec_data["Length_Fan"] = st.text_input("Length (mm)", key="Length_Fan")
+        spec_data["Width_Fan"] = st.text_input("Width (mm)", key="Width_Fan")
+        spec_data["Height_Fan"] = st.text_input("Height (mm)", key="Height_Fan")
+        spec_data["Max_Power_Fan"] = st.text_input("Max Power (W)", key="Fan_Max_Power")
+        spec_data["Input_Voltage"] = st.text_input("Input voltage (V)", key="Input_Voltage")
+        spec_data["Input_Current"] = st.text_input("Input current (A)", key="Input_Current")
+        spec_data["PQ"] = st.text_input("P-Q", key="PQ")
+        spec_data["Speed"] = st.text_input("Rotational speed (RPM)", key="Speed")
+        spec_data["Noise"] = st.text_input("Noise (dB)", key="Noise")
+        spec_data["Tone"] = st.text_input("Tone", key="Tone")
+        spec_data["Sone"] = st.text_input("Sone", key="Sone")
+        spec_data["Weight"] = st.text_input("Weight (g)", key="Weight")
+        spec_data["Connector_Type"] = st.text_input("端子頭型號", key="Connector_Type")
+        spec_data["Connector_Pin"] = st.text_input("線序", key="Connector_Pin")
+        spec_data["Connector_Length"] = st.text_input("出框線長", key="Connector_Length")
 
-    # Liquid Cooling
     if "Liquid Cooling水冷" in spec_options:
         st.subheader("Liquid Cooling水冷")
-    spec_data["Plate_Form"] = st.text_input("Plate Form", key="Plate_Form")
-    spec_data["Max_Power_Liquid"] = st.text_input("Max Power (W)", key="Liquid_Max_Power")
-    spec_data["Tj_Max"] = st.text_input("Tj_Max (°C)", key="Tj_Max")
-    spec_data["Tcase_Max_Liquid"] = st.text_input("Tcase_Max (°C)", key="Tcase_Max_Liquid")
-    spec_data["T_Inlet"] = st.text_input("T_Inlet (°C)", key="T_Inlet")
-    spec_data["Chip_Size"] = st.text_input("Chip contact size LxWxH (mm)", key="Chip_Size")
-    spec_data["Thermal_Resistance_Liquid"] = st.text_input("Thermal Resistance (°C/W)", key="Liquid_Resistance")
-    spec_data["Flow_Rate"] = st.text_input("Flow rate (LPM)", key="Flow_Rate")
-    spec_data["Impedance"] = st.text_input("Impedance (KPa)", key="Impedance")
-    spec_data["Max_Loading"] = st.text_input("Max loading (lbs)", key="Max_Loading")
+        spec_data["Plate_Form"] = st.text_input("Plate Form", key="Plate_Form")
+        spec_data["Max_Power_Liquid"] = st.text_input("Max Power (W)", key="Liquid_Max_Power")
+        spec_data["Tj_Max"] = st.text_input("Tj_Max (°C)", key="Tj_Max")
+        spec_data["Tcase_Max_Liquid"] = st.text_input("Tcase_Max (°C)", key="Tcase_Max_Liquid")
+        spec_data["T_Inlet"] = st.text_input("T_Inlet (°C)", key="T_Inlet")
+        spec_data["Chip_Size"] = st.text_input("Chip contact size LxWxH (mm)", key="Chip_Size")
+        spec_data["Thermal_Resistance_Liquid"] = st.text_input("Thermal Resistance (°C/W)", key="Liquid_Resistance")
+        spec_data["Flow_Rate"] = st.text_input("Flow rate (LPM)", key="Flow_Rate")
+        spec_data["Impedance"] = st.text_input("Impedance (KPa)", key="Impedance")
+        spec_data["Max_Loading"] = st.text_input("Max loading (lbs)", key="Max_Loading")
 
     return spec_data
 
