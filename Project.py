@@ -230,8 +230,10 @@ def preview_page():
         st.write(f"**{k}：** {record.get(k, '')}")
 
     st.subheader("C. 規格資訊")
-    for option in record.get("Spec_Type", []):
-        st.write(f"- {option}")
+    for section, fields in record["Spec_Type"].items():
+        st.markdown(f"**{section}**")
+        for k, v in fields.items():
+            st.write(f"{k}：{v}")
 
     col1, col2 = st.columns(2)
     if col1.button("🔙 返回修改"):
