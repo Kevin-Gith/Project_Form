@@ -102,8 +102,10 @@ def export_to_template(record):
 
             # 寫每個欄位
             for k, v in fields.items():
-                ws[f"{col}{row}"] = f"{k}：{v}"
+                value = v if v not in ["", None] else ""
+                ws[f"{col}{row}"] = f"{k}: {value}"
                 row += 1
+
 
     # 存到 BytesIO
     output = io.BytesIO()
