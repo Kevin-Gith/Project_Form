@@ -83,25 +83,27 @@ def export_to_template(record):
     ws["B15"] = record.get("MV", "")
     ws["E15"] = record.get("MP", "")
 
-    # C. 規格資訊：依方案分欄
+    # ====== C. 規格資訊 ======
+    # 每一類型對應起始欄位與列號
     spec_map = {
-        "Air Cooling氣冷": "A17",
-        "Fan風扇": "C17",
-        "Liquid Cooling水冷": "E17"
+        "Air Cooling氣冷": ("A", 17),
+        "Fan風扇": ("C", 17),
+        "Liquid Cooling水冷": ("E", 17)
     }
 
     for section, fields in record.get("Spec_Type", {}).items():
-        # 組合文字
-        text_lines = []
-        text_lines.append(f"【{section}】")
-        for k, v in fields.items():
-            if v:  # 只寫有輸入的
-                text_lines.append(f"{k}: {v}")
-        text_value = "\n".join(text_lines)
-
-        # 找對應欄位
         if section in spec_map:
-            ws[spec_map[section]] = text_value
+            col, start_row = spec_map[section]
+            row = start_row
+
+            # 寫標題
+            ws[f"{col}{row}"] = section
+            row += 1
+
+            # 寫每個欄位
+            for k, v in fields.items():
+                ws[f"{col}{row}"] = f"{k}：{v}"
+                row += 1
 
     # 存到 BytesIO
     output = io.BytesIO()
