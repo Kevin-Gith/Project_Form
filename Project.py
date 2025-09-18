@@ -194,23 +194,54 @@ def preview_page():
     st.title("📑 預覽申請內容")
 
     form_data = st.session_state["form_data"]
-    df = pd.DataFrame([form_data])
 
-    st.table(df)
+    # --- A. 客戶資訊 ---
+    st.subheader("A. 客戶資訊")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**北辦業務**:", form_data["Sales_User"])
+        st.write("**ODM客戶 (RD)**:", form_data["ODM_Customers"])
+        st.write("**品牌客戶 (RD)**:", form_data["Brand_Customers"])
+    with col2:
+        st.write("**申請目的**:", form_data["Application_Purpose"])
+        st.write("**客戶專案名稱**:", form_data["Project_Name"])
+        st.write("**客戶提案日期**:", form_data["Proposal_Date"])
+
+    # --- B. 開案資訊 ---
+    st.subheader("B. 開案資訊")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**產品應用**:", form_data["Product_Application"])
+        st.write("**散熱方式**:", form_data["Cooling_Solution"])
+        st.write("**交貨地點**:", form_data["Delivery_Location"])
+        st.write("**樣品需求日期**:", form_data["Sample_Date"])
+    with col2:
+        st.write("**樣品需求數量**:", form_data["Sample_Qty"])
+        st.write("**需求量**:", form_data["Demand_Qty"])
+        st.write("**Schedule SI**:", form_data["Schedule_SI"])
+        st.write("**Schedule PV**:", form_data["Schedule_PV"])
+        st.write("**Schedule MV**:", form_data["Schedule_MV"])
+        st.write("**Schedule MP**:", form_data["Schedule_MP"])
+
+    # --- C. 規格資訊 ---
+    st.subheader("C. 規格資訊")
+    for key, value in form_data.items():
+        if key not in ["Sales_User","ODM_Customers","Brand_Customers","Application_Purpose","Project_Name","Proposal_Date",
+                       "Product_Application","Cooling_Solution","Delivery_Location","Sample_Date","Sample_Qty","Demand_Qty",
+                       "Schedule_SI","Schedule_PV","Schedule_MV","Schedule_MP","建立時間"]:
+            st.write(f"**{key}**: {value}")
+
+    st.markdown("---")
 
     col1, col2 = st.columns(2)
     with col1:
         if st.button("✅ 下載並送出"):
             filename = f"Project_Form_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-            df.to_excel(filename, index=False)
-
+            pd.DataFrame([form_data]).to_excel(filename, index=False)
             sheet.append_row(list(form_data.values()))
-
             with open(filename, "rb") as f:
                 st.download_button("⬇️ 下載 Excel", f, file_name=filename)
-
             st.success("✅ 已送出並記錄到 Google Sheet！")
-
     with col2:
         if st.button("❌ 取消"):
             st.session_state["preview_mode"] = False
@@ -225,11 +256,16 @@ def form_page():
     spec_info = render_spec_info()
 
     if st.button("完成"):
-        form_data = {**customer_info, **project_info, **spec_info}
-        form_data["建立時間"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
-        st.session_state["form_data"] = form_data
-        st.session_state["preview_mode"] = True
-        st.rerun()
+        # 驗證必填欄位（A + B）
+        missing_fields = [k for k, v in {**customer_info, **project_info}.items() if not v]
+        if missing_fields:
+            st.error("❌ 客戶資訊或開案資訊未完成填寫，請重新確認")
+        else:
+            form_data = {**customer_info, **project_info, **spec_info}
+            form_data["建立時間"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+            st.session_state["form_data"] = form_data
+            st.session_state["preview_mode"] = True
+            st.rerun()
 
 # ========== 主程式 ==========
 def main():
