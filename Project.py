@@ -39,7 +39,7 @@ def logout():
 
 # ========== 頁面：登入 ==========
 def login_page():
-    st.title("🔐 Kipo專案申請系統")
+    st.title("💻 Kipo專案申請系統")
 
     username = st.text_input("帳號", key="login_username")
     password = st.text_input("密碼", type="password", key="login_password")
@@ -102,11 +102,10 @@ def render_project_info():
     demand_qty = st.text_input("需求量 (預估數量/總年數)", key="demand_qty")
 
     st.subheader("Schedule")
-    col1, col2, col3, col4 = st.columns(4)
-    si = col1.text_input("SI", key="si")
-    pv = col2.text_input("PV", key="pv")
-    mv = col3.text_input("MV", key="mv")
-    mp = col4.text_input("MP", key="mp")
+    si = st.text_input("SI", key="si")
+    pv = st.text_input("PV", key="pv")
+    mv = st.text_input("MV", key="mv")
+    mp = st.text_input("MP", key="mp")
 
     return {
         "Product_Application": product_app,
@@ -127,6 +126,38 @@ def render_spec_info():
     spec_options = st.multiselect("選擇散熱方案", ["Air Cooling氣冷", "Fan風扇", "Liquid Cooling水冷"], key="spec_options")
     spec_data = {}
 
+    if "Air Cooling氣冷" in spec_options:
+        st.subheader("Air Cooling氣冷")
+        spec_data["Air Cooling氣冷"] = {
+            "Air_Flow": st.text_input("Air Flow (RPM/Voltage/CFM)", key="air_flow"),
+            "Tcase_Max": st.text_input("Tcase_Max (°C)", key="air_tcase"),
+            "Thermal_Resistance": st.text_input("Thermal Resistance (°C/W)", key="air_res"),
+            "Max_Power": st.text_input("Max Power (W)", key="air_power"),
+            "Length": st.text_input("Length (mm)", key="air_len"),
+            "Width": st.text_input("Width (mm)", key="air_wid"),
+            "Height": st.text_input("Height (mm)", key="air_hei"),
+        }
+
+    if "Fan風扇" in spec_options:
+        st.subheader("Fan風扇")
+        spec_data["Fan風扇"] = {
+            "Length": st.text_input("Length (mm)", key="fan_len"),
+            "Width": st.text_input("Width (mm)", key="fan_wid"),
+            "Height": st.text_input("Height (mm)", key="fan_hei"),
+            "Max_Power": st.text_input("Max Power (W)", key="fan_power"),
+            "Input_Voltage": st.text_input("Input voltage (V)", key="fan_volt"),
+            "Input_Current": st.text_input("Input current (A)", key="fan_curr"),
+            "PQ": st.text_input("P-Q", key="fan_pq"),
+            "Speed": st.text_input("Rotational speed (RPM)", key="fan_speed"),
+            "Noise": st.text_input("Noise (dB)", key="fan_noise"),
+            "Tone": st.text_input("Tone", key="fan_tone"),
+            "Sone": st.text_input("Sone", key="fan_sone"),
+            "Weight": st.text_input("Weight (g)", key="fan_weight"),
+            "Connector": st.text_input("端子頭型號", key="fan_con"),
+            "Wiring": st.text_input("線序", key="fan_wire"),
+            "Cable_Length": st.text_input("出框線長", key="fan_cable"),
+        }
+
     if "Liquid Cooling水冷" in spec_options:
         st.subheader("Liquid Cooling水冷")
         spec_data["Liquid Cooling水冷"] = {
@@ -146,9 +177,9 @@ def render_spec_info():
 
     return spec_data
 
-# ========== 表單頁 ==========
+# ========== 頁面：表單 ==========
 def form_page():
-    st.title("📝 Kipo專案申請系統")
+    st.title("💻 Kipo專案申請系統")
     if st.button("🚪 登出"):
         logout()
 
@@ -157,14 +188,46 @@ def form_page():
     spec_info = render_spec_info()
 
     if st.button("✅ 完成"):
-        # 必填檢查
-        if not customer_info["ODM_Customers"] or not customer_info["Brand_Customers"] or not customer_info["Application_Purpose"] or not customer_info["Project_Name"] or not customer_info["Proposal_Date"]:
+        if not customer_info["ODM_Customers"] or not customer_info["Brand_Customers"] or not customer_info["Application_Purpose"] or not customer_info["Project_Name"]:
             st.error("客戶資訊未完成填寫，請重新確認")
-        elif not project_info["Product_Application"] or not project_info["Cooling_Solution"] or not project_info["Delivery_Location"] or not project_info["Sample_Date"] or not project_info["Sample_Qty"] or not project_info["Demand_Qty"]:
+        elif not project_info["Product_Application"] or not project_info["Cooling_Solution"] or not project_info["Delivery_Location"] or not project_info["Sample_Qty"] or not project_info["Demand_Qty"]:
             st.error("開案資訊未完成填寫，請重新確認")
         else:
-            st.session_state["record"] = {**customer_info, **project_info, "Spec_Type": spec_info}
+            st.session_state["record"] = {
+                **customer_info, **project_info, "Spec_Type": spec_info
+            }
             st.session_state["page"] = "preview"
+
+# ========== 頁面：預覽 ==========
+def preview_page():
+    st.title("📋 預覽填寫內容")
+
+    record = st.session_state["record"]
+
+    st.subheader("A. 客戶資訊")
+    for k, v in record.items():
+        if k in ["Sales_User", "ODM_Customers", "Brand_Customers", "Application_Purpose", "Project_Name", "Proposal_Date"]:
+            st.write(f"**{k}：** {v}")
+
+    st.subheader("B. 開案資訊")
+    for k, v in record.items():
+        if k in ["Product_Application", "Cooling_Solution", "Delivery_Location", "Sample_Date", "Sample_Qty", "Demand_Qty", "SI", "PV", "MV", "MP"]:
+            st.write(f"**{k}：** {v}")
+
+    st.subheader("C. 規格資訊")
+    for section, fields in record["Spec_Type"].items():
+        st.markdown(f"**{section}**")
+        for k, v in fields.items():
+            st.write(f"{k}：{v}")
+
+    col1, col2 = st.columns(2)
+    if col1.button("🔙 返回修改"):
+        st.session_state["page"] = "form"
+    if col2.button("💾 確認送出"):
+        now = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+        record["建立時間"] = now
+        sheet.append_row(list(record.values()))
+        st.success("✅ 已寫入 Google Sheet！")
 
 # ========== 主程式 ==========
 def main():
@@ -177,7 +240,7 @@ def main():
     elif st.session_state["page"] == "form":
         form_page()
     elif st.session_state["page"] == "preview":
-        st.write(st.session_state["record"])  # 預覽頁簡化，實際可加表格排版
+        preview_page()
 
 if __name__ == "__main__":
     main()
