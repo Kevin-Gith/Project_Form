@@ -48,9 +48,11 @@ def logout():
 
 # ========== 儲存到 Google Sheet ==========
 def save_to_google_sheet(record):
-    record["Spec_Type"] = ", ".join(record.get("Spec_Type", []))
-    record["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
-    row = [record.get(col, "") for col in SHEET_HEADERS]
+    # 只存方案名稱
+    record_for_sheet = record.copy()
+    record_for_sheet["Spec_Type"] = ", ".join(record.get("Spec_Type", {}).keys())
+    record_for_sheet["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+    row = [record_for_sheet.get(col, "") for col in SHEET_HEADERS]
     sheet.append_row(row)
 
 # ========== 頁面：登入 ==========
@@ -117,7 +119,7 @@ def render_project_info():
     sample_qty = st.text_input("樣品需求數量", key="sample_qty")
     demand_qty = st.text_input("需求量 (預估數量/總年數)", key="demand_qty")
 
-    st.text("Schedule")
+    st.text("需求進度 (Schedule)")
     col1, col2, col3, col4 = st.columns(4)
     si = col1.text_input("SI", key="si")
     pv = col2.text_input("PV", key="pv")
@@ -230,10 +232,14 @@ def preview_page():
         st.write(f"**{k}：** {record.get(k, '')}")
 
     st.subheader("C. 規格資訊")
-    for section, fields in record["Spec_Type"].items():
-        st.markdown(f"**{section}**")
-        for k, v in fields.items():
-            st.write(f"{k}：{v}")
+    spec_info = record.get("Spec_Type", {})
+    if spec_info:
+        for section, fields in spec_info.items():
+            st.markdown(f"**{section}**")
+            for k, v in fields.items():
+                st.write(f"{k}：{v}")
+    else:
+        st.write("（未選擇散熱方案）")
 
     col1, col2 = st.columns(2)
     if col1.button("🔙 返回修改"):
