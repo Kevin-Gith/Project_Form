@@ -227,7 +227,6 @@ def form_page():
             st.session_state["page"] = "preview"
 
 # ========== 頁面：預覽 ==========
-# ========== 頁面：預覽 ==========
 def preview_page():
     st.title("📋 預覽填寫內容")
 
@@ -236,14 +235,40 @@ def preview_page():
     # 先顯示北辦業務
     st.write(f"### 北辦業務：{record.get('Sales_User','')}")
 
+    # A. 客戶資訊
     st.subheader("A. 客戶資訊")
-    for k in ["ODM_Customers", "Brand_Customers", "Application_Purpose", "Project_Name", "Proposal_Date"]:
-        st.write(f"**{k}：** {record.get(k, '')}")
+    field_map_a = {
+        "ODM_Customers": "ODM客戶(RD)",
+        "Brand_Customers": "品牌客戶(RD)",
+        "Application_Purpose": "申請目的",
+        "Project_Name": "客戶專案名稱",
+        "Proposal_Date": "客戶提案日期"
+    }
+    for k, v in field_map_a.items():
+        st.write(f"**{v}：** {record.get(k, '')}")
 
+    # B. 開案資訊
     st.subheader("B. 開案資訊")
-    for k in ["Product_Application", "Cooling_Solution", "Delivery_Location", "Sample_Date", "Sample_Qty", "Demand_Qty", "SI", "PV", "MV", "MP"]:
-        st.write(f"**{k}：** {record.get(k, '')}")
+    field_map_b = {
+        "Product_Application": "產品應用",
+        "Cooling_Solution": "散熱方式",
+        "Delivery_Location": "交貨地點",
+        "Sample_Date": "樣品需求日期",
+        "Sample_Qty": "樣品需求數量",
+        "Demand_Qty": "需求量(預估數量/總年數)",
+    }
+    for k, v in field_map_b.items():
+        st.write(f"**{v}：** {record.get(k, '')}")
 
+    # Schedule 獨立小標題
+    st.markdown("#### Schedule")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.write(f"**SI：** {record.get('SI','')}")
+    col2.write(f"**PV：** {record.get('PV','')}")
+    col3.write(f"**MV：** {record.get('MV','')}")
+    col4.write(f"**MP：** {record.get('MP','')}")
+
+    # C. 規格資訊
     st.subheader("C. 規格資訊")
     for section, fields in record["Spec_Type"].items():
         st.markdown(f"**{section}**")
