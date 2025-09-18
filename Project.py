@@ -30,6 +30,13 @@ USER_CREDENTIALS = {
 }
 
 
+# ========== 登出功能 ==========
+def logout():
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.session_state["page"] = "login"
+
+
 # ========== 頁面：登入 ==========
 def login_page():
     st.title("💻 Kipo專案申請系統")
@@ -51,20 +58,23 @@ def render_customer_info():
     st.header("A. 客戶資訊")
     st.write(f"**北辦業務：{st.session_state['user']}**")
 
-    odm = st.selectbox("ODM客戶 (RD)", ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)其他"])
+    odm = st.selectbox("ODM客戶 (RD)", ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)其他"],
+                       key="odm")
     if odm == "(08)其他":
-        odm = st.text_input("請輸入ODM客戶")
+        odm = st.text_input("請輸入ODM客戶", key="odm_other")
 
-    brand = st.selectbox("品牌客戶 (RD)", ["(01)惠普", "(02)聯想", "(03)高通", "(04)華碩", "(05)宏碁", "(06)微星", "(07)技嘉", "(08)其他"])
+    brand = st.selectbox("品牌客戶 (RD)", ["(01)惠普", "(02)聯想", "(03)高通", "(04)華碩", "(05)宏碁", "(06)微星", "(07)技嘉", "(08)其他"],
+                         key="brand")
     if brand == "(08)其他":
-        brand = st.text_input("請輸入品牌客戶")
+        brand = st.text_input("請輸入品牌客戶", key="brand_other")
 
-    purpose = st.selectbox("申請目的", ["(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(04)其他"])
+    purpose = st.selectbox("申請目的", ["(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(04)其他"],
+                           key="purpose")
     if purpose == "(04)其他":
-        purpose = st.text_input("請輸入申請目的")
+        purpose = st.text_input("請輸入申請目的", key="purpose_other")
 
-    project_name = st.text_input("客戶專案名稱")
-    proposal_date = st.date_input("客戶提案日期", value=datetime.date.today())
+    project_name = st.text_input("客戶專案名稱", key="project_name")
+    proposal_date = st.date_input("客戶提案日期", value=datetime.date.today(), key="proposal_date")
 
     return {
         "Sales_User": st.session_state["user"],
@@ -80,28 +90,31 @@ def render_customer_info():
 def render_project_info():
     st.header("B. 開案資訊")
 
-    product_app = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Other"])
+    product_app = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Other"],
+                               key="product_app")
     if product_app == "(05)Other":
-        product_app = st.text_input("請輸入產品應用")
+        product_app = st.text_input("請輸入產品應用", key="product_app_other")
 
-    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Cooler(含Fan)", "(04)Liquid Cooling", "(05)Other"])
+    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Cooler(含Fan)", "(04)Liquid Cooling", "(05)Other"],
+                           key="cooling")
     if cooling == "(05)Other":
-        cooling = st.text_input("請輸入散熱方式")
+        cooling = st.text_input("請輸入散熱方式", key="cooling_other")
 
-    delivery = st.selectbox("交貨地點", ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"])
+    delivery = st.selectbox("交貨地點", ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"],
+                            key="delivery")
     if delivery == "(05)Other":
-        delivery = st.text_input("請輸入交貨地點")
+        delivery = st.text_input("請輸入交貨地點", key="delivery_other")
 
-    sample_date = st.date_input("樣品需求日期", value=datetime.date.today())
-    sample_qty = st.text_input("樣品需求數量")
-    demand_qty = st.text_input("需求量 (預估數量/總年數)")
+    sample_date = st.date_input("樣品需求日期", value=datetime.date.today(), key="sample_date")
+    sample_qty = st.text_input("樣品需求數量", key="sample_qty")
+    demand_qty = st.text_input("需求量 (預估數量/總年數)", key="demand_qty")
 
     st.subheader("Schedule")
     col1, col2, col3, col4 = st.columns(4)
-    si = col1.text_input("SI")
-    pv = col2.text_input("PV")
-    mv = col3.text_input("MV")
-    mp = col4.text_input("MP")
+    si = col1.text_input("SI", key="si")
+    pv = col2.text_input("PV", key="pv")
+    mv = col3.text_input("MV", key="mv")
+    mp = col4.text_input("MP", key="mp")
 
     return {
         "Product_Application": product_app,
@@ -121,7 +134,7 @@ def render_project_info():
 def render_spec_info():
     st.header("C. 規格資訊")
 
-    spec_options = st.multiselect("選擇散熱方案", ["Air Cooling氣冷", "Fan風扇", "Liquid Cooling水冷"])
+    spec_options = st.multiselect("選擇散熱方案", ["Air Cooling氣冷", "Fan風扇", "Liquid Cooling水冷"], key="spec_options")
     spec_data = {}
 
     if "Air Cooling氣冷" in spec_options:
@@ -179,33 +192,20 @@ def preview_page(record):
     st.title("📑 填寫內容預覽")
 
     st.subheader("A. 客戶資訊")
-    st.table(pd.DataFrame([{
-        "北辦業務": record.get("Sales_User", ""),
-        "ODM客戶(RD)": record.get("ODM_Customers", ""),
-        "品牌客戶(RD)": record.get("Brand_Customers", ""),
-        "申請目的": record.get("Application_Purpose", ""),
-        "客戶專案名稱": record.get("Project_Name", ""),
-        "客戶提案日期": record.get("Proposal_Date", "")
-    }]))
+    for k, v in record.items():
+        if k in ["Sales_User", "ODM_Customers", "Brand_Customers", "Application_Purpose", "Project_Name", "Proposal_Date"]:
+            st.write(f"**{k}：** {v}")
 
     st.subheader("B. 開案資訊")
-    st.table(pd.DataFrame([{
-        "產品應用": record.get("Product_Application", ""),
-        "散熱方式": record.get("Cooling_Solution", ""),
-        "交貨地點": record.get("Delivery_Location", ""),
-        "樣品需求日期": record.get("Sample_Date", ""),
-        "樣品需求數量": record.get("Sample_Qty", ""),
-        "需求量": record.get("Demand_Qty", ""),
-        "Schedule_SI": record.get("SI", ""),
-        "Schedule_PV": record.get("PV", ""),
-        "Schedule_MV": record.get("MV", ""),
-        "Schedule_MP": record.get("MP", "")
-    }]))
+    for k, v in record.items():
+        if k in ["Product_Application", "Cooling_Solution", "Delivery_Location", "Sample_Date", "Sample_Qty", "Demand_Qty", "SI", "PV", "MV", "MP"]:
+            st.write(f"**{k}：** {v}")
 
     st.subheader("C. 規格資訊")
     for spec_type, spec_values in record.get("Spec_Type", {}).items():
         st.markdown(f"**{spec_type}**")
-        st.table(pd.DataFrame([spec_values]))
+        for sub_k, sub_v in spec_values.items():
+            st.write(f"- {sub_k}：{sub_v}")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -215,6 +215,8 @@ def preview_page(record):
     with col2:
         if st.button("🔙 返回修改"):
             st.session_state["page"] = "form"
+
+    st.sidebar.button("🔒 登出", on_click=logout)
 
 
 # ========== 輔助 ==========
@@ -233,12 +235,13 @@ def flatten_record(record):
 # ========== 表單頁 ==========
 def form_page():
     st.title("📝 Kipo專案申請系統 - 表單")
+    st.sidebar.button("🔒 登出", on_click=logout)
 
     customer_info = render_customer_info()
     project_info = render_project_info()
     spec_info = render_spec_info()
 
-    if st.button("完成"):
+    if st.button("✅ 完成"):
         if not customer_info["ODM_Customers"] or not customer_info["Brand_Customers"] or not customer_info["Application_Purpose"] or not customer_info["Project_Name"]:
             st.error("客戶資訊未完成填寫，請重新確認")
         elif not project_info["Product_Application"] or not project_info["Cooling_Solution"] or not project_info["Delivery_Location"]:
