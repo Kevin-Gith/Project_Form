@@ -48,7 +48,6 @@ def logout():
 
 # ========== 儲存到 Google Sheet ==========
 def save_to_google_sheet(record):
-    # 只存方案名稱
     record_for_sheet = record.copy()
     record_for_sheet["Spec_Type"] = ", ".join(record.get("Spec_Type", {}).keys())
     record_for_sheet["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
@@ -91,7 +90,7 @@ def render_customer_info():
     proposal_date = st.date_input("客戶提案日期", value=datetime.date.today(), key="proposal_date")
 
     return {
-        "Sales_User": st.session_state["user"],
+        "Sales_User": st.session_state.get("user", ""),  # ✅ 避免 KeyError
         "ODM_Customers": odm,
         "Brand_Customers": brand,
         "Application_Purpose": purpose,
@@ -198,6 +197,11 @@ def render_spec_info():
 
 # ========== 頁面：表單 ==========
 def form_page():
+    # ✅ 防呆：未登入直接跳回登入頁
+    if not st.session_state.get("logged_in", False):
+        st.session_state["page"] = "login"
+        return
+
     st.title("💻 Kipo專案申請系統")
     if st.button("🚪 登出"):
         logout()
