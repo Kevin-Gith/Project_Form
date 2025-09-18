@@ -20,7 +20,6 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
 
-
 # ========== 使用者帳號密碼 ==========
 USER_CREDENTIALS = {
     "sam@kipotec.com.tw": {"password": "Kipo-0926969586$$$", "name": "Sam"},
@@ -28,7 +27,6 @@ USER_CREDENTIALS = {
     "sale5@kipotec.com.tw": {"password": "Kipo-0925698417$$$", "name": "Wendy"},
     "sale2@kipotec.com.tw": {"password": "Kipo-0905038111$$$", "name": "Lillian"},
 }
-
 
 # ========== 登出功能 ==========
 def logout():
@@ -39,22 +37,20 @@ def logout():
     st.session_state["page"] = "login"
     st.session_state["logged_in"] = False
 
-
 # ========== 頁面：登入 ==========
 def login_page():
-    st.title("Kipo專案申請系統")
+    st.title("🔐 Kipo專案申請系統")
 
     username = st.text_input("帳號", key="login_username")
     password = st.text_input("密碼", type="password", key="login_password")
 
-    if st.button("登入"):
+    if st.button("🔑 登入"):
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username]["password"] == password:
             st.session_state["logged_in"] = True
             st.session_state["user"] = USER_CREDENTIALS[username]["name"]
             st.session_state["page"] = "form"
         else:
             st.error("帳號或密碼錯誤，請重新輸入")
-
 
 # ========== 頁面：A. 客戶資訊 ==========
 def render_customer_info():
@@ -96,7 +92,6 @@ def render_customer_info():
         "Project_Name": project_name,
         "Proposal_Date": proposal_date.strftime("%Y/%m/%d")
     }
-
 
 # ========== 頁面：B. 開案資訊 ==========
 def render_project_info():
@@ -150,11 +145,9 @@ def render_project_info():
         "MP": mp
     }
 
-
 # ========== 頁面：C. 規格資訊 ==========
 def render_spec_info():
     st.header("C. 規格資訊")
-
     spec_options = st.multiselect("選擇散熱方案", ["Air Cooling氣冷", "Fan風扇", "Liquid Cooling水冷"], key="spec_options")
     spec_data = {}
 
@@ -207,11 +200,10 @@ def render_spec_info():
 
     return spec_data
 
-
 # ========== 預覽頁 ==========
 def preview_page(record):
-    st.title("Kipo專案申請系統 🖥️")
-    if st.button("登出"):
+    st.title("📝 Kipo專案申請系統")
+    if st.button("🚪 登出"):
         logout()
 
     st.subheader("A. 客戶資訊")
@@ -237,7 +229,6 @@ def preview_page(record):
         if st.button("🔙 返回修改"):
             st.session_state["page"] = "form"
 
-
 # ========== 輔助 ==========
 def flatten_record(record):
     flat = {}
@@ -250,11 +241,10 @@ def flatten_record(record):
     flat["建立時間"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
     return flat
 
-
 # ========== 表單頁 ==========
 def form_page():
-    st.title("Kipo專案申請系統 🖥️")
-    if st.button("登出"):
+    st.title("📝 Kipo專案申請系統")
+    if st.button("🚪 登出"):
         logout()
 
     customer_info = render_customer_info()
@@ -270,7 +260,6 @@ def form_page():
             st.session_state["record"] = {**customer_info, **project_info, "Spec_Type": spec_info}
             st.session_state["page"] = "preview"
 
-
 # ========== 主程式 ==========
 def main():
     if "page" not in st.session_state:
@@ -283,7 +272,6 @@ def main():
         form_page()
     elif st.session_state["page"] == "preview":
         preview_page(st.session_state["record"])
-
 
 if __name__ == "__main__":
     main()
