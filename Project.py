@@ -5,6 +5,7 @@ import io
 import os
 from openpyxl import load_workbook
 from google.oauth2.service_account import Credentials
+from openpyxl.utils import column_index_from_string
 import datetime
 
 # ========== Google Sheet 設定 ==========
@@ -103,7 +104,9 @@ def export_to_template(record):
             # 寫每個欄位
             for k, v in fields.items():
                 value = v if v not in ["", None] else ""
-                ws[f"{col}{row}"] = f"{k}: {value}"
+                # 轉換欄位字母 (A/C/E) → 欄位數字 (1/3/5)
+                col_index = column_index_from_string(col)
+                ws.cell(row=row, column=col_index).value = f"{k}: {value}"
                 row += 1
 
 
