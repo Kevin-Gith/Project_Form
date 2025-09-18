@@ -83,7 +83,7 @@ def export_to_template(record):
     ws["B15"] = record.get("MV", "")
     ws["E15"] = record.get("MP", "")
 
-    # C. 規格資訊 → 各方案分欄
+    # C. 規格資訊：依方案分欄
     spec_map = {
         "Air Cooling氣冷": "A17",
         "Fan風扇": "C17",
@@ -91,12 +91,15 @@ def export_to_template(record):
     }
 
     for section, fields in record.get("Spec_Type", {}).items():
-        text_lines = [f"【{section}】"]
+        # 組合文字
+        text_lines = []
+        text_lines.append(f"【{section}】")
         for k, v in fields.items():
-            if v:  # 有輸入才寫入
+            if v:  # 只寫有輸入的
                 text_lines.append(f"{k}: {v}")
         text_value = "\n".join(text_lines)
 
+        # 找對應欄位
         if section in spec_map:
             ws[spec_map[section]] = text_value
 
