@@ -90,7 +90,7 @@ def render_customer_info():
     proposal_date = st.date_input("客戶提案日期", value=datetime.date.today(), key="proposal_date")
 
     return {
-        "Sales_User": st.session_state.get("user", ""),  # ✅ 避免 KeyError
+        "Sales_User": st.session_state.get("user", ""),
         "ODM_Customers": odm,
         "Brand_Customers": brand,
         "Application_Purpose": purpose,
@@ -197,7 +197,6 @@ def render_spec_info():
 
 # ========== 頁面：表單 ==========
 def form_page():
-    # ✅ 防呆：未登入直接跳回登入頁
     if not st.session_state.get("logged_in", False):
         st.session_state["page"] = "login"
         return
@@ -211,10 +210,13 @@ def form_page():
     spec_info = render_spec_info()
 
     if st.button("✅ 完成"):
-        if not customer_info["ODM_Customers"] or not customer_info["Brand_Customers"] or not customer_info["Application_Purpose"] or not customer_info["Project_Name"]:
+        # A、B 必填檢查
+        if any(v in ["", None] for v in customer_info.values()):
             st.error("客戶資訊未完成填寫，請重新確認")
-        elif not project_info["Product_Application"] or not project_info["Cooling_Solution"] or not project_info["Delivery_Location"] or not project_info["Sample_Qty"] or not project_info["Demand_Qty"]:
+        elif any(v in ["", None] for v in project_info.values()):
             st.error("開案資訊未完成填寫，請重新確認")
+        elif not spec_info:  # C 至少一種方案
+            st.error("規格資訊請至少選擇一種方案")
         else:
             st.session_state["record"] = {
                 **customer_info, **project_info, "Spec_Type": spec_info
@@ -242,8 +244,6 @@ def preview_page():
             st.markdown(f"**{section}**")
             for k, v in fields.items():
                 st.write(f"{k}：{v}")
-    else:
-        st.write("（未選擇散熱方案）")
 
     col1, col2 = st.columns(2)
     if col1.button("🔙 返回修改"):
