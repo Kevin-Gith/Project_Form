@@ -1,9 +1,7 @@
 import streamlit as st
 import gspread
-import pandas as pd
-import json
-from google.oauth2.service_account import Credentials
 import datetime
+from google.oauth2.service_account import Credentials
 
 # ========== Google Sheet 設定 ==========
 SHEET_NAME = "Project_Form"
@@ -29,7 +27,7 @@ SHEET_HEADERS = [
     "SI", "PV", "MV", "MP", "Spec_Type", "Update_Time"
 ]
 
-# ========== 使用者帳號密碼 ==========
+# 使用者帳號密碼
 USER_CREDENTIALS = {
     "sam@kipotec.com.tw": {"password": "Kipo-0926969586$$$", "name": "Sam"},
     "sale1@kipotec.com.tw": {"password": "Kipo-0917369466$$$", "name": "Vivian"},
@@ -37,7 +35,7 @@ USER_CREDENTIALS = {
     "sale2@kipotec.com.tw": {"password": "Kipo-0905038111$$$", "name": "Lillian"},
 }
 
-# ========== 登出功能 ==========
+# ========== 登出 ==========
 def logout():
     keep_keys = {"page", "logged_in"}
     for key in list(st.session_state.keys()):
@@ -48,16 +46,11 @@ def logout():
 
 # ========== 儲存到 Google Sheet ==========
 def save_to_google_sheet(record):
-    # Spec_Type 只保留方案名稱
+    # Spec_Type 只存方案名稱
     record["Spec_Type"] = ", ".join(record.get("Spec_Type", []))
-
-    # 建立時間
     record["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
 
-    # 按照固定欄位順序取值
     row = [record.get(col, "") for col in SHEET_HEADERS]
-
-    # 寫入 Google Sheet
     sheet.append_row(row)
 
 # ========== 頁面：登入 ==========
@@ -124,7 +117,7 @@ def render_project_info():
     sample_qty = st.text_input("樣品需求數量", key="sample_qty")
     demand_qty = st.text_input("需求量 (預估數量/總年數)", key="demand_qty")
 
-    st.markdown("**Schedule**")
+    st.text("Schedule")  # 和樣品需求數量一樣樣式
     col1, col2, col3, col4 = st.columns(4)
     si = col1.text_input("SI", key="si")
     pv = col2.text_input("PV", key="pv")
@@ -147,8 +140,48 @@ def render_project_info():
 # ========== 頁面：C. 規格資訊 ==========
 def render_spec_info():
     st.header("C. 規格資訊")
-    spec_options = st.multiselect("選擇散熱方案", ["Air Cooling氣冷", "Fan風扇", "Liquid Cooling水冷"], key="spec_options")
-    return spec_options  # 只回傳選到的方案名稱
+    spec_options = st.multiselect("選擇散熱方案", ["Air Cooling", "Fan", "Liquid Cooling"], key="spec_options")
+
+    spec_data = {"Spec_Type": spec_options}
+
+    if "Air Cooling" in spec_options:
+        st.subheader("Air Cooling 氣冷")
+        spec_data["Air_Flow"] = st.text_input("Air Flow (RPM/Voltage/CFM)", key="air_flow")
+        spec_data["Tcase_Max"] = st.text_input("Tcase_Max (°C)", key="air_tcase")
+        spec_data["Thermal_Resistance"] = st.text_input("Thermal Resistance (°C/W)", key="air_res")
+        spec_data["Max_Power_Air"] = st.text_input("Max Power (W)", key="air_power")
+        spec_data["Size_Air"] = st.text_input("Size LxWxH (mm)", key="air_size")
+
+    if "Fan" in spec_options:
+        st.subheader("Fan 風扇")
+        spec_data["Size_Fan"] = st.text_input("Size LxWxH (mm)", key="fan_size")
+        spec_data["Max_Power_Fan"] = st.text_input("Max Power (W)", key="fan_power")
+        spec_data["Input_Voltage"] = st.text_input("Input voltage (V)", key="fan_volt")
+        spec_data["Input_Current"] = st.text_input("Input current (A)", key="fan_curr")
+        spec_data["PQ"] = st.text_input("P-Q", key="fan_pq")
+        spec_data["Speed"] = st.text_input("Rotational speed (RPM)", key="fan_speed")
+        spec_data["Noise"] = st.text_input("Noise (dB)", key="fan_noise")
+        spec_data["Tone"] = st.text_input("Tone", key="fan_tone")
+        spec_data["Sone"] = st.text_input("Sone", key="fan_sone")
+        spec_data["Weight"] = st.text_input("Weight (g)", key="fan_weight")
+        spec_data["Connector"] = st.text_input("端子頭型號、線序、出框線長", key="fan_connector")
+
+    if "Liquid Cooling" in spec_options:
+        st.subheader("Liquid Cooling 水冷")
+        spec_data["Plate_Form"] = st.text_input("Plate Form", key="liq_plate")
+        spec_data["Max_Power_Liquid"] = st.text_input("Max Power (W)", key="liq_power")
+        spec_data["Tj_Max"] = st.text_input("Tj_Max (°C)", key="liq_tj")
+        spec_data["Tcase_Max_Liquid"] = st.text_input("Tcase_Max (°C)", key="liq_tcase")
+        spec_data["T_Inlet"] = st.text_input("T_Inlet (°C)", key="liq_inlet")
+        spec_data["Chip_Length"] = st.text_input("Chip contact Length (mm)", key="liq_len")
+        spec_data["Chip_Width"] = st.text_input("Chip contact Width (mm)", key="liq_wid")
+        spec_data["Chip_Height"] = st.text_input("Chip contact Height (mm)", key="liq_hei")
+        spec_data["Thermal_Resistance_Liquid"] = st.text_input("Thermal Resistance (°C/W)", key="liq_res")
+        spec_data["Flow_Rate"] = st.text_input("Flow rate (LPM)", key="liq_flow")
+        spec_data["Impedance"] = st.text_input("Impedance (KPa)", key="liq_imp")
+        spec_data["Max_Loading"] = st.text_input("Max loading (lbs)", key="liq_load")
+
+    return spec_data
 
 # ========== 頁面：表單 ==========
 def form_page():
@@ -166,9 +199,7 @@ def form_page():
         elif not project_info["Product_Application"] or not project_info["Cooling_Solution"] or not project_info["Delivery_Location"] or not project_info["Sample_Qty"] or not project_info["Demand_Qty"]:
             st.error("開案資訊未完成填寫，請重新確認")
         else:
-            st.session_state["record"] = {
-                **customer_info, **project_info, "Spec_Type": spec_info
-            }
+            st.session_state["record"] = {**customer_info, **project_info, **spec_info}
             st.session_state["page"] = "preview"
 
 # ========== 頁面：預覽 ==========
@@ -186,8 +217,11 @@ def preview_page():
         st.write(f"**{k}：** {record.get(k, '')}")
 
     st.subheader("C. 規格資訊")
-    for option in record.get("Spec_Type", []):  # 安全處理，避免 KeyError
-        st.write(f"- {option}")
+    for option in record.get("Spec_Type", []):
+        st.write(f"### {option}")
+        for k, v in record.items():
+            if option in k or k.startswith(option[:3].lower()):  # 簡單對應顯示
+                st.write(f"- {k}：{v}")
 
     col1, col2 = st.columns(2)
     if col1.button("🔙 返回修改"):
