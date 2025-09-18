@@ -68,13 +68,14 @@ def login_page():
             st.session_state["page"] = "form"
         else:
             st.error("帳號或密碼錯誤，請重新輸入")
+# ========== 頁面：北辦業務 =============
+    st.write(f"**北辦業務：{st.session_state.get('user','')}**")
 
 # ========== 頁面：A. 客戶資訊 ==========
 def render_customer_info():
     st.header("A. 客戶資訊")
-    st.write(f"**北辦業務：{st.session_state.get('user','')}**")
-
-    odm = st.selectbox("ODM客戶 (RD)", ["", "(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)其他"], key="odm")
+    
+    odm = st.selectbox("ODM客戶 (RD)", ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)其他"], key="odm")
     if odm == "(08)其他":
         odm = st.text_input("請輸入ODM客戶", key="odm_other")
 
