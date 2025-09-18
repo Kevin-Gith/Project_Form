@@ -381,7 +381,7 @@ def preview_page():
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-        st.success("✅ 已下載Excel檔案")
+        st.success("✅ 已準備好下載Excel檔案")
 
 # ========== 主程式 ==========
 def main():
