@@ -59,7 +59,7 @@ def export_to_excel_with_template(record):
     ws = wb.active
 
     # A. 客戶資訊
-    ws["B6"] = f"北辦業務：{record.get('Sales_User','')}"
+    ws["B5"] = record.get("Sales_User", "")
     ws["B7"] = record.get("ODM_Customers", "")
     ws["E7"] = record.get("Brand_Customers", "")
     ws["B8"] = record.get("Project_Name", "")
@@ -78,7 +78,7 @@ def export_to_excel_with_template(record):
     ws["B15"] = record.get("MV", "")
     ws["E15"] = record.get("MP", "")
 
-    # C. 規格資訊
+    # C. 規格資訊 -> 從 A17 開始
     row = 17
     for section, fields in record["Spec_Type"].items():
         ws[f"A{row}"] = section
