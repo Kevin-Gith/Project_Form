@@ -32,9 +32,12 @@ USER_CREDENTIALS = {
 
 # ========== 登出功能 ==========
 def logout():
+    keep_keys = {"page", "logged_in"}
     for key in list(st.session_state.keys()):
-        del st.session_state[key]
+        if key not in keep_keys:
+            del st.session_state[key]
     st.session_state["page"] = "login"
+    st.session_state["logged_in"] = False
 
 
 # ========== 頁面：登入 ==========
@@ -56,7 +59,7 @@ def login_page():
 # ========== 頁面：A. 客戶資訊 ==========
 def render_customer_info():
     st.header("A. 客戶資訊")
-    st.write(f"**北辦業務：{st.session_state['user']}**")
+    st.write(f"**北辦業務：{st.session_state.get('user','')}**")
 
     odm = st.selectbox(
         "ODM客戶 (RD)",
@@ -83,7 +86,7 @@ def render_customer_info():
         purpose = st.text_input("請輸入申請目的", key="purpose_other")
 
     project_name = st.text_input("客戶專案名稱", key="project_name")
-    proposal_date = st.date_input("客戶提案日期", value=datetime.date.today(), key="proposal_date")
+    proposal_date = st.date_input("客戶提案日期", value=st.session_state.get("proposal_date", datetime.date.today()), key="proposal_date")
 
     return {
         "Sales_User": st.session_state["user"],
@@ -123,7 +126,7 @@ def render_project_info():
     if delivery == "(05)Other":
         delivery = st.text_input("請輸入交貨地點", key="delivery_other")
 
-    sample_date = st.date_input("樣品需求日期", value=datetime.date.today(), key="sample_date")
+    sample_date = st.date_input("樣品需求日期", value=st.session_state.get("sample_date", datetime.date.today()), key="sample_date")
     sample_qty = st.text_input("樣品需求數量", key="sample_qty")
     demand_qty = st.text_input("需求量 (預估數量/總年數)", key="demand_qty")
 
@@ -207,9 +210,8 @@ def render_spec_info():
 
 # ========== 預覽頁 ==========
 def preview_page(record):
-    st.title("Kipo專案申請系統")
-
-    if st.button("🔒 登出"):
+    st.title("Kipo專案申請系統 🖥️")
+    if st.button("登出"):
         logout()
 
     st.subheader("A. 客戶資訊")
@@ -251,8 +253,8 @@ def flatten_record(record):
 
 # ========== 表單頁 ==========
 def form_page():
-    st.title("Kipo專案申請系統")
-    if st.button("🔒 登出"):
+    st.title("Kipo專案申請系統 🖥️")
+    if st.button("登出"):
         logout()
 
     customer_info = render_customer_info()
