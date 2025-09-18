@@ -80,7 +80,7 @@ def export_to_template(record):
     ws["B15"] = record.get("MV", "")
     ws["E15"] = record.get("MP", "")
 
-    # ====== C. 規格資訊 ======
+    # ====== C. 規格資訊（塞進單一格，標題下空一行） ======
     spec_map = {
         "Air Cooling氣冷": "A17",
         "Fan風扇": "C17",
@@ -89,14 +89,14 @@ def export_to_template(record):
 
     for section, fields in record.get("Spec_Type", {}).items():
         if section in spec_map:
-            # 把整個區塊組成文字
-            lines = [section]  # 先放標題
+            # 標題 + 空一行
+            lines = [section, ""]  
             for k, v in fields.items():
                 value = v if v not in ["", None] else ""
                 lines.append(f"{k}: {value}")
             text_value = "\n".join(lines)
 
-            # 一次寫入起始格（合併區左上角）
+            # 寫到對應欄位
             ws[spec_map[section]] = text_value
 
     # 匯出
@@ -201,9 +201,9 @@ def render_spec_info():
             "Tcase_Max": st.text_input("Tcase_Max (°C)", key="air_tcase"),
             "Thermal_Resistance": st.text_input("Thermal Resistance (°C/W)", key="air_res"),
             "Max_Power": st.text_input("Max Power (W)", key="air_power"),
-            "Length": st.text_input("Length (mm)", key="air_len"),
-            "Width": st.text_input("Width (mm)", key="air_wid"),
-            "Height": st.text_input("Height (mm)", key="air_hei"),
+            "Length": st.text_input("Chip_Length (mm)", key="air_len"),
+            "Width": st.text_input("Chip_Width (mm)", key="air_wid"),
+            "Height": st.text_input("Chip_Height (mm)", key="air_hei"),
         }
 
     if "Fan風扇" in spec_options:
@@ -234,9 +234,9 @@ def render_spec_info():
             "Tj_Max": st.text_input("Tj_Max (°C)", key="liq_tj"),
             "Tcase_Max": st.text_input("Tcase_Max (°C)", key="liq_tcase"),
             "T_Inlet": st.text_input("T_Inlet (°C)", key="liq_inlet"),
-            "Chip_Length": st.text_input("Chip contact Length (mm)", key="liq_chip_length"),
-            "Chip_Width": st.text_input("Chip contact Width (mm)", key="liq_chip_width"),
-            "Chip_Height": st.text_input("Chip contact Height (mm)", key="liq_chip_height"),
+            "Chip_Length": st.text_input("Chip_Length (mm)", key="liq_chip_length"),
+            "Chip_Width": st.text_input("Chip_Width (mm)", key="liq_chip_width"),
+            "Chip_Height": st.text_input("Chip_Height (mm)", key="liq_chip_height"),
             "Thermal_Resistance": st.text_input("Thermal Resistance (°C/W)", key="liq_res"),
             "Flow_Rate": st.text_input("Flow rate (LPM)", key="liq_flow"),
             "Impedance": st.text_input("Impedance (KPa)", key="liq_imp"),
@@ -331,7 +331,7 @@ def preview_page():
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-        st.success("✅ 已下載Excel檔案並記錄到Google Sheet！")
+        st.success("✅ 已下載Excel檔案")
 
 # ========== 主程式 ==========
 def main():
