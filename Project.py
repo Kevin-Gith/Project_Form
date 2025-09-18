@@ -227,13 +227,17 @@ def form_page():
             st.session_state["page"] = "preview"
 
 # ========== 頁面：預覽 ==========
+# ========== 頁面：預覽 ==========
 def preview_page():
     st.title("📋 預覽填寫內容")
 
     record = st.session_state.get("record", {})
 
+    # 先顯示北辦業務
+    st.write(f"### 北辦業務：{record.get('Sales_User','')}")
+
     st.subheader("A. 客戶資訊")
-    for k in ["Sales_User", "ODM_Customers", "Brand_Customers", "Application_Purpose", "Project_Name", "Proposal_Date"]:
+    for k in ["ODM_Customers", "Brand_Customers", "Application_Purpose", "Project_Name", "Proposal_Date"]:
         st.write(f"**{k}：** {record.get(k, '')}")
 
     st.subheader("B. 開案資訊")
@@ -241,12 +245,10 @@ def preview_page():
         st.write(f"**{k}：** {record.get(k, '')}")
 
     st.subheader("C. 規格資訊")
-    spec_info = record.get("Spec_Type", {})
-    if spec_info:
-        for section, fields in spec_info.items():
-            st.markdown(f"**{section}**")
-            for k, v in fields.items():
-                st.write(f"{k}：{v}")
+    for section, fields in record["Spec_Type"].items():
+        st.markdown(f"**{section}**")
+        for k, v in fields.items():
+            st.write(f"{k}：{v}")
 
     col1, col2 = st.columns(2)
     if col1.button("🔙 返回修改"):
