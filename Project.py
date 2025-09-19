@@ -408,13 +408,12 @@ def preview_page():
     if not st.session_state["submitted"]:
         if col2.button("💾 確認送出", key="confirm_submit"):
             st.write("送出前 record：", st.session_state["record"])  # Debug
+            save_to_google_sheet(record)   # ← 直接在這裡寫入 Google Sheet
+            st.session_state["excel_data"] = export_to_template(record)
             st.session_state["submitted"] = True
             st.rerun()
     else:
-        if "excel_data" not in st.session_state:
-            save_to_google_sheet(record)
-            st.session_state["excel_data"] = export_to_template(record)
-
+        # 只負責顯示下載區
         st.download_button(
             label="⬇️ 下載Excel檔案",
             data=st.session_state["excel_data"],
