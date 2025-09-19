@@ -323,29 +323,63 @@ def preview_page():
     record = st.session_state.get("record", {})
     st.write(f"### 北辦業務：{record.get('Sales_User','')}")
 
-    # 顯示填寫內容 (略，跟之前一樣)
+    # ---------- A. 客戶資訊 ----------
+    st.subheader("A. 客戶資訊")
+    for k, v in {
+        "ODM_Customers": "ODM客戶(RD)",
+        "Brand_Customers": "品牌客戶(RD)",
+        "Application_Purpose": "申請目的",
+        "Project_Name": "客戶專案名稱",
+        "Proposal_Date": "客戶提案日期"
+    }.items():
+        st.write(f"**{v}：** {record.get(k, '')}")
 
+    # ---------- B. 開案資訊 ----------
+    st.subheader("B. 開案資訊")
+    for k, v in {
+        "Product_Application": "產品應用",
+        "Cooling_Solution": "散熱方式",
+        "Delivery_Location": "交貨地點",
+        "Sample_Date": "樣品需求日期",
+        "Sample_Qty": "樣品需求數量",
+        "Demand_Qty": "需求量(預估數量/總年數)"
+    }.items():
+        st.write(f"**{v}：** {record.get(k, '')}")
+
+    st.markdown("#### Schedule")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.write(f"**SI：** {record.get('SI','')}")
+    col2.write(f"**PV：** {record.get('PV','')}")
+    col3.write(f"**MV：** {record.get('MV','')}")
+    col4.write(f"**MP：** {record.get('MP','')}")
+
+    # ---------- C. 規格資訊 ----------
+    st.subheader("C. 規格資訊")
+    for section, fields in record.get("Spec_Type", {}).items():
+        st.markdown(f"**{section}**")
+        for k, v in fields.items():
+            unit = UNIT_MAP.get(k, "")
+            st.write(f"{k}{f' ({unit})' if unit else ''}: {v}")
+
+    # ---------- 按鈕區 ----------
     col1, col2 = st.columns(2)
     if col1.button("🔙 返回修改"):
         st.session_state["page"] = "form"
 
-    # 初始化狀態
     if "submitted" not in st.session_state:
         st.session_state["submitted"] = False
 
-    # 如果還沒送出
     if not st.session_state["submitted"]:
         if col2.button("💾 確認送出", key="confirm_submit"):
-            # 第一時間就標記已送出
             st.session_state["submitted"] = True
-            st.rerun()
-
-    # 如果已經送出 → 執行寫入 & 顯示下載
+            st.rerun()  # 避免同一輪被連點
     else:
+        # 寫入 + 匯出只執行一次
         if "excel_data" not in st.session_state:
             save_to_google_sheet(record)
             st.session_state["excel_data"] = export_to_template(record)
 
+        # 在「預覽內容下方」顯示下載區
         st.download_button(
             label="⬇️ 下載Excel檔案",
             data=st.session_state["excel_data"],
