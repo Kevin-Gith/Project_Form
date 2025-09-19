@@ -87,11 +87,12 @@ def generate_project_number(odm, product_app, cooling):
     records = sheet.get_all_records()
     max_num = 0
     for r in records:
-        if r.get("Project_Number", "").startswith(prefix):
+        proj = str(r.get("Project_Number", "")).strip()  # 🔹 確保轉成字串並去掉空白
+        if proj.startswith(prefix):
             try:
-                seq = int(r["Project_Number"].split("-")[-1])
+                seq = int(proj.split("-")[-1])
                 max_num = max(max_num, seq)
-            except:
+            except ValueError:
                 pass
 
     new_seq = max_num + 1
@@ -100,6 +101,7 @@ def generate_project_number(odm, product_app, cooling):
 # ========== 儲存到 Google Sheet ==========
 def save_to_google_sheet(record):
     record_for_sheet = record.copy()
+    record_for_sheet["Project_Number"] = record.get("Project_Number", "")   # ⭐ 保證一定存在
     record_for_sheet["Spec_Type"] = ", ".join(record.get("Spec_Type", {}).keys())
     record_for_sheet["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
     row = [record_for_sheet.get(col, "") for col in SHEET_HEADERS]
