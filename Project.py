@@ -350,7 +350,6 @@ def form_page():
                 "Project_Number": project_number,
                 **customer_info, **project_info, "Spec_Type": spec_info
             }
-            st.write("進入預覽頁，record：", st.session_state["record"])  # Debug
             st.session_state["submitted"] = False
             st.session_state["page"] = "preview"
 
