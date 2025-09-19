@@ -106,10 +106,6 @@ def save_to_google_sheet(record):
     record_for_sheet["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
 
     row = [record_for_sheet.get(col, "") for col in SHEET_HEADERS]
-
-    # Debug 檢查
-    st.write("即將寫入 Google Sheet 的 row：", row)
-
     sheet.append_row(row)
 
 # ========== 匯出到 Excel 模板 ==========
