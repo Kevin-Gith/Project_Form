@@ -323,27 +323,26 @@ def preview_page():
     record = st.session_state.get("record", {})
     st.write(f"### 北辦業務：{record.get('Sales_User','')}")
 
+    # ---------- 顯示填寫內容 ----------
     st.subheader("A. 客戶資訊")
-    field_map_a = {
+    for k, v in {
         "ODM_Customers": "ODM客戶(RD)",
         "Brand_Customers": "品牌客戶(RD)",
         "Application_Purpose": "申請目的",
         "Project_Name": "客戶專案名稱",
         "Proposal_Date": "客戶提案日期"
-    }
-    for k, v in field_map_a.items():
+    }.items():
         st.write(f"**{v}：** {record.get(k, '')}")
 
     st.subheader("B. 開案資訊")
-    field_map_b = {
+    for k, v in {
         "Product_Application": "產品應用",
         "Cooling_Solution": "散熱方式",
         "Delivery_Location": "交貨地點",
         "Sample_Date": "樣品需求日期",
         "Sample_Qty": "樣品需求數量",
-        "Demand_Qty": "需求量(預估數量/總年數)",
-    }
-    for k, v in field_map_b.items():
+        "Demand_Qty": "需求量(預估數量/總年數)"
+    }.items():
         st.write(f"**{v}：** {record.get(k, '')}")
 
     st.markdown("#### Schedule")
@@ -358,23 +357,28 @@ def preview_page():
         st.markdown(f"**{section}**")
         for k, v in fields.items():
             unit = UNIT_MAP.get(k, "")
-            unit_str = f" ({unit})" if unit else ""
-            st.write(f"{k}{unit_str}: {v}")
+            st.write(f"{k}{f' ({unit})' if unit else ''}: {v}")
 
+    # ---------- 按鈕區 ----------
     col1, col2 = st.columns(2)
     if col1.button("🔙 返回修改"):
         st.session_state["page"] = "form"
 
+    # 初始化狀態
     if "submitted" not in st.session_state:
         st.session_state["submitted"] = False
 
+    # 尚未送出 → 顯示確認送出按鈕
     if not st.session_state["submitted"]:
-        if col2.button("💾 確認送出"):
+        submit = col2.button("💾 確認送出", key="submit_btn")
+        if submit:
+            st.session_state["submitted"] = True   # 馬上標記已送出
             save_to_google_sheet(record)
             excel_data = export_to_template(record)
             st.session_state["excel_data"] = excel_data
-            st.session_state["submitted"] = True
-            st.experimental_rerun()
+            st.experimental_rerun()  # 立刻刷新，避免被再次點擊
+
+    # 已送出 → 顯示下載按鈕
     else:
         st.download_button(
             label="⬇️ 下載Excel檔案",
