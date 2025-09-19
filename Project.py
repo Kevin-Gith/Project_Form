@@ -314,6 +314,7 @@ def form_page():
             st.session_state["record"] = {
                 **customer_info, **project_info, "Spec_Type": spec_info
             }
+            st.session_state["submitted"] = False   # ⭐ 重設狀態
             st.session_state["page"] = "preview"
 
 # ========== 頁面：預覽 ==========
