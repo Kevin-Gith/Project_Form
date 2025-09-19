@@ -406,7 +406,6 @@ def preview_page():
 
     if not st.session_state["submitted"]:
         if col2.button("💾 確認送出", key="confirm_submit"):
-            st.write("送出前 record：", st.session_state["record"])  # Debug
             save_to_google_sheet(record)   # ← 直接在這裡寫入 Google Sheet
             st.session_state["excel_data"] = export_to_template(record)
             st.session_state["submitted"] = True
