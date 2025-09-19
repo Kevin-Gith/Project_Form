@@ -338,7 +338,7 @@ def preview_page():
         if col2.button("💾 確認送出", key="confirm_submit"):
             # 第一時間就標記已送出
             st.session_state["submitted"] = True
-            st.experimental_rerun()
+            st.rerun()
 
     # 如果已經送出 → 執行寫入 & 顯示下載
     else:
