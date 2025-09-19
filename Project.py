@@ -121,7 +121,6 @@ def export_to_template(record):
         if section in spec_map:
             lines = [section, ""]  # 標題 + 空一行
 
-            # 調整輸出順序
             if section == "Air Cooling氣冷":
                 last_keys = ["Chip_Length", "Chip_Width", "Chip_Height"]
             elif section == "Fan風扇":
@@ -131,14 +130,12 @@ def export_to_template(record):
             else:
                 last_keys = []
 
-            # 先印一般欄位
             for k, v in fields.items():
                 if k not in last_keys:
                     unit = UNIT_MAP.get(k, "")
                     unit_str = f" ({unit})" if unit else ""
                     lines.append(f"{k}{unit_str}: {v}")
 
-            # 再印最後三個
             for k in last_keys:
                 if k in fields:
                     unit = UNIT_MAP.get(k, "")
@@ -147,7 +144,6 @@ def export_to_template(record):
 
             ws[spec_map[section]] = "\n".join(lines)
 
-    # 匯出
     output = io.BytesIO()
     wb.save(output)
     return output.getvalue()
@@ -369,18 +365,23 @@ def preview_page():
     if col1.button("🔙 返回修改"):
         st.session_state["page"] = "form"
 
-    if col2.button("💾 確認送出"):
-        save_to_google_sheet(record)
+    if "submitted" not in st.session_state:
+        st.session_state["submitted"] = False
 
-        excel_data = export_to_template(record)
-
+    if not st.session_state["submitted"]:
+        if col2.button("💾 確認送出"):
+            save_to_google_sheet(record)
+            excel_data = export_to_template(record)
+            st.session_state["excel_data"] = excel_data
+            st.session_state["submitted"] = True
+            st.experimental_rerun()
+    else:
         st.download_button(
             label="⬇️ 下載Excel檔案",
-            data=excel_data,
+            data=st.session_state["excel_data"],
             file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
         st.success("✅ 已準備好下載Excel檔案")
 
 # ========== 主程式 ==========
@@ -398,3 +399,100 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+#詳細說明請參考以下內容
+#------------------------------------------------------------------------------------------------------------------
+#1.使用者登入帳號密碼(當帳號密碼輸入正確時，按下登入按鈕後，會轉跳畫面)
+
+#使用者Sam -> 帳號：sam@kipotec.com.tw / 密碼：Kipo-0926969586$$$
+#使用者Vivian -> 帳號：sale1@kipotec.com.tw / 密碼：Kipo-0917369466$$$
+#使用者Wendy -> 帳號：sale5@kipotec.com.tw / 密碼：Kipo-0925698417$$$
+#使用者Lillian -> 帳號：sale2@kipotec.com.tw / 密碼：Kipo-0905038111$$$
+
+#*登入資訊錯誤會顯示"帳號或密碼輸入錯誤，請重新輸入"，並且會停留在此網頁，直到輸入正確
+#------------------------------------------------------------------------------------------------------------------
+#2.填寫表單內容(登入成功後，會看到以下選項，當表單內容填寫完後，按下才完成按鈕後，會轉跳畫面)
+
+#<A.客戶資訊>
+#北辦業務：顯示使用者名稱(Sam、Vivian、Wendy、Lillian)
+#ODM客戶(RD)：下拉式選單(01)仁寶、(02)廣達、(03)緯創、(04)華勤、(05)光寶、(06)技嘉、(07)智邦、(08)其他
+#品牌客戶(RD)：下拉式選單(01)惠普、(02)聯想、(03)高通、(04)華碩、(05)宏碁、(06)微星、(07)技嘉、(08)其他
+#客戶專案名稱：使用者自行填寫
+#客戶提案日期：使用者選擇日期
+#申請目的：下拉式選單(01)客戶專案開發、(2)內部新產品開發、(3)技術平台預研 、(4)其他
+
+#<B.開案資訊>
+#產品應用：下拉式選單(01)NB CPU、(02)NB GPU、(03)Server、(04)Automotive(Car)、(05)Other
+#散熱方式：下拉式選單(01)Air Cooling、(02)Fan、(03)Cooler(含Fan)、(04)Liquid Cooling、(05)Other
+#	樣品需求日期(使用者選擇日期)
+#	樣品需求數量 -> 顯示可以打字的地方，使用者自行輸入
+#	Schedule
+#		SI -> 顯示可以打字的地方，使用者自行輸入
+#		PV -> 顯示可以打字的地方，使用者自行輸入
+#		MV -> 顯示可以打字的地方，使用者自行輸入
+#		MP -> 顯示可以打字的地方，使用者自行輸入
+#	需求量(預估數量/總年數) -> 顯示可以打字的地方，使用者自行輸入
+#	交貨地點：下拉式選單(01)Taiwan、(02)China、(03)Thailand、(04)Vietnam、(00)Other
+
+#<C.規格資訊>
+#Air Cooling：
+#	Air Flow(單位 RPM/Voltage/CFM) -> 顯示可以打字的地方，使用者自行輸入
+#	Tcase_Max(單位 °C) -> 顯示可以打字的地方，使用者自行輸入
+#	Thermal Resistance(單位 ˚C/W) -> 顯示可以打字的地方，使用者自行輸入
+#	Max Power(單位 W) -> 顯示可以打字的地方，使用者自行輸入
+#	Size L、W、H(單位 mm) -> 顯示可以打字的地方，使用者自行輸入
+#Fan：
+#	Size L、W、H(單位 mm) -> 顯示可以打字的地方，使用者自行輸入
+#	Max Power(單位 W) -> 顯示可以打字的地方，使用者自行輸入
+#	Input voltage(單位 V) -> 顯示可以打字的地方，使用者自行輸入
+#	Input current(單位 A) -> 顯示可以打字的地方，使用者自行輸入
+#	P-Q -> 顯示可以打字的地方，使用者自行輸入
+#	Rotational speed(單位 RPM) -> 顯示可以打字的地方，使用者自行輸入
+#	Noise(單位 dB) -> 顯示可以打字的地方，使用者自行輸入
+#	Tone -> 顯示可以打字的地方，使用者自行輸入
+#	Sone -> 顯示可以打字的地方，使用者自行輸入
+#	Weight(單位 g) -> 顯示可以打字的地方，使用者自行輸入
+#	端子頭型號、線序、出框線長 -> 顯示可以打字的地方，使用者自行輸入
+#Liquid Cooling：
+#	Plate Form -> 顯示可以打字的地方，使用者自行輸入
+#	Max Power(單位 W) -> 顯示可以打字的地方，使用者自行輸入
+#	Tj_Max(單位 °C) -> 顯示可以打字的地方，使用者自行輸入
+#	Tcase_Max(單位 °C) -> 顯示可以打字的地方，使用者自行輸入
+#	T_Inlet(單位 °C) -> 顯示可以打字的地方，使用者自行輸入
+#	Chip contact size L、W、H(單位 mm) -> 顯示可以打字的地方，使用者自行輸入
+#	Thermal Resistance(單位 °C/W ) -> 顯示可以打字的地方，使用者自行輸入
+#	Flow rate(LPM) -> 顯示可以打字的地方，使用者自行輸入
+#	Impedance(單位 Kpa) -> 顯示可以打字的地方，使用者自行輸入
+#	Max loading(單位 lbs) -> 顯示可以打字的地方，使用者自行輸入
+
+#<D.可行性評估>
+#業務主管 -> 顯示可以打字的地方，使用者自行輸入
+#研發主管 -> 顯示可以打字的地方，使用者自行輸入
+
+#*C.規格資訊欄位為可複選勾選選項(Air Cooling、Fan、Liquid Cooling)，根據打勾選項會出現對應內容，沒有勾選則不會顯示內容
+#*A.客戶資訊和B.開案資訊的內容都要填寫，如果有任一欄位空白時，在按下完成按鈕後，會顯示客戶資訊或開案資訊欄位未填寫完畢，請重新確認的訊息
+#------------------------------------------------------------------------------------------------------------------
+#3.顯示表單結果(會預覽使用者填寫的表單內容，最下方有下載Excel的按鈕，按下後會自動下載文件，也有取消按鈕，按下後可以回到上一頁修改內容)
+
+#表單最下方會出現以下欄位
+#申請日期 -> 顯示可以打字的地方，使用者自行輸入
+#專案申請人 -> 顯示可以打字的地方，使用者自行輸入
+#填寫日期 -> 顯示可以打字的地方，使用者自行輸入
+#規格填寫人 -> 顯示可以打字的地方，使用者自行輸入
+#業務主管審核 -> 顯示可以打字的地方，使用者自行輸入
+#研發主管審核 -> 顯示可以打字的地方，使用者自行輸入
+#核准 -> 顯示可以打字的地方，使用者自行輸入
+#------------------------------------------------------------------------------------------------------------------
+#4.資料記錄到google sheet
+
+#名稱：Project_Form
+#工作頁：Python
+#欄位：
+#ODM_Customers -> ODM客戶(RD)
+#Brand_Customers -> 品牌客戶(RD)
+#Application_Purpose -> 申請目的
+#Product_Application -> 產品應用
+#Cooling_Solution -> 散熱方式
+#Delivery_Location -> 交貨地點
+#Applicant -> 使用者(Sam、Vivian、Wendy、Lillian)
+#Application Deadline -> 系統自行填寫(YYYY/MM/DD/HH/MM)
