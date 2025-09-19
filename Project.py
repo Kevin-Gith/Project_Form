@@ -23,9 +23,9 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
 
-# 固定 Google Sheet 欄位順序
+# 固定 Google Sheet 欄位順序（已加上 Project_Number）
 SHEET_HEADERS = [
-    "Sales_User", "ODM_Customers", "Brand_Customers", "Application_Purpose",
+    "Project_Number", "Sales_User", "ODM_Customers", "Brand_Customers", "Application_Purpose",
     "Project_Name", "Proposal_Date", "Product_Application", "Cooling_Solution",
     "Delivery_Location", "Sample_Date", "Sample_Qty", "Demand_Qty",
     "SI", "PV", "MV", "MP", "Spec_Type", "Update_Time"
@@ -76,6 +76,27 @@ def logout():
     st.session_state["page"] = "login"
     st.session_state["logged_in"] = False
 
+# ========== 自動產生專案編號 ==========
+def generate_project_number(odm, product_app, cooling):
+    odm_code = odm.split(")")[0].strip("(")
+    prod_code = product_app.split(")")[0].strip("(")
+    cool_code = cooling.split(")")[0].strip("(")
+
+    prefix = f"{odm_code}-{prod_code}-{cool_code}"
+
+    records = sheet.get_all_records()
+    max_num = 0
+    for r in records:
+        if r.get("Project_Number", "").startswith(prefix):
+            try:
+                seq = int(r["Project_Number"].split("-")[-1])
+                max_num = max(max_num, seq)
+            except:
+                pass
+
+    new_seq = max_num + 1
+    return f"{prefix}-{new_seq:03d}"
+
 # ========== 儲存到 Google Sheet ==========
 def save_to_google_sheet(record):
     record_for_sheet = record.copy()
@@ -89,6 +110,9 @@ def export_to_template(record):
     template_path = os.path.join(os.path.dirname(__file__), "Kipo_Project_Form.xlsx")
     wb = load_workbook(template_path)
     ws = wb.active  # 預設第一個工作表
+
+    # ⭐ 專案編號
+    ws["E5"] = record.get("Project_Number", "")
 
     # A. 客戶資訊
     ws["B5"] = record.get("Sales_User", "")
@@ -119,7 +143,7 @@ def export_to_template(record):
 
     for section, fields in record.get("Spec_Type", {}).items():
         if section in spec_map:
-            lines = [section, ""]  # 標題 + 空一行
+            lines = [section, ""]
 
             if section == "Air Cooling氣冷":
                 last_keys = ["Chip_Length", "Chip_Width", "Chip_Height"]
@@ -193,30 +217,17 @@ def render_customer_info():
     }
 
 # ========== 頁面：B. 開案資訊 ==========
-# ========== 頁面：B. 開案資訊 ==========
 def render_project_info():
     st.header("B. 開案資訊")
 
-    product_app = st.selectbox(
-        "產品應用",
-        ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Other"],
-        key="product_app"
-    )
+    product_app = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Other"], key="product_app")
     if product_app == "(05)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
 
     # ✅ 已修改：只保留三個選項
-    cooling = st.selectbox(
-        "散熱方式",
-        ["(01)Air Cooling", "(02)Fan", "(03)Liquid Cooling"],
-        key="cooling"
-    )
+    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Liquid Cooling"], key="cooling")
 
-    delivery = st.selectbox(
-        "交貨地點",
-        ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"],
-        key="delivery"
-    )
+    delivery = st.selectbox("交貨地點", ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"], key="delivery")
     if delivery == "(05)Other":
         delivery = st.text_input("請輸入交貨地點", key="delivery_other")
 
@@ -323,10 +334,17 @@ def form_page():
         elif not spec_info:
             st.error("規格資訊請至少選擇一種方案")
         else:
+            # ⭐ 自動產生專案編號
+            project_number = generate_project_number(
+                customer_info["ODM_Customers"],
+                project_info["Product_Application"],
+                project_info["Cooling_Solution"]
+            )
             st.session_state["record"] = {
+                "Project_Number": project_number,
                 **customer_info, **project_info, "Spec_Type": spec_info
             }
-            st.session_state["submitted"] = False   # ⭐ 重設狀態
+            st.session_state["submitted"] = False
             st.session_state["page"] = "preview"
 
 # ========== 頁面：預覽 ==========
@@ -334,9 +352,12 @@ def preview_page():
     st.title("📋 預覽填寫內容")
 
     record = st.session_state.get("record", {})
+
+    # ⭐ 顯示專案編號
+    st.subheader(f"專案編號：{record.get('Project_Number','')}")
+
     st.write(f"### 北辦業務：{record.get('Sales_User','')}")
 
-    # ---------- A. 客戶資訊 ----------
     st.subheader("A. 客戶資訊")
     for k, v in {
         "ODM_Customers": "ODM客戶(RD)",
@@ -347,7 +368,6 @@ def preview_page():
     }.items():
         st.write(f"**{v}：** {record.get(k, '')}")
 
-    # ---------- B. 開案資訊 ----------
     st.subheader("B. 開案資訊")
     for k, v in {
         "Product_Application": "產品應用",
@@ -366,7 +386,6 @@ def preview_page():
     col3.write(f"**MV：** {record.get('MV','')}")
     col4.write(f"**MP：** {record.get('MP','')}")
 
-    # ---------- C. 規格資訊 ----------
     st.subheader("C. 規格資訊")
     for section, fields in record.get("Spec_Type", {}).items():
         st.markdown(f"**{section}**")
@@ -374,7 +393,6 @@ def preview_page():
             unit = UNIT_MAP.get(k, "")
             st.write(f"{k}{f' ({unit})' if unit else ''}: {v}")
 
-    # ---------- 按鈕區 ----------
     col1, col2 = st.columns(2)
     if col1.button("🔙 返回修改"):
         st.session_state["page"] = "form"
@@ -385,14 +403,12 @@ def preview_page():
     if not st.session_state["submitted"]:
         if col2.button("💾 確認送出", key="confirm_submit"):
             st.session_state["submitted"] = True
-            st.rerun()  # 避免同一輪被連點
+            st.rerun()
     else:
-        # 寫入 + 匯出只執行一次
         if "excel_data" not in st.session_state:
             save_to_google_sheet(record)
             st.session_state["excel_data"] = export_to_template(record)
 
-        # 在「預覽內容下方」顯示下載區
         st.download_button(
             label="⬇️ 下載Excel檔案",
             data=st.session_state["excel_data"],
