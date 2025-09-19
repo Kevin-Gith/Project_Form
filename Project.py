@@ -200,10 +200,11 @@ def render_project_info():
     if product_app == "(05)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
 
-    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Cooler(含Fan)", "(04)Liquid Cooling", "(05)Other"], key="cooling")
-    if cooling == "(05)Other":
-        cooling = st.text_input("請輸入散熱方式", key="cooling_other")
-
+    cooling = st.selectbox("散熱方式", 
+    ["(01)Air Cooling", "(02)Fan", "(03)Liquid Cooling"], 
+    key="cooling"
+    )
+    
     delivery = st.selectbox("交貨地點", ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"], key="delivery")
     if delivery == "(05)Other":
         delivery = st.text_input("請輸入交貨地點", key="delivery_other")
