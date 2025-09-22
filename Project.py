@@ -45,7 +45,7 @@ USER_CREDENTIALS = {
 # 優先順序
 USER_PRIORITY = {"Sam": 1, "Vivian": 2, "Lillian": 3, "Wendy": 4}
 
-LOCK_TIMEOUT = 3  # 鎖定時間上限（秒），例如 300秒 = 5分鐘
+LOCK_TIMEOUT = 30  # 鎖定時間上限（秒），例如 300秒 = 5分鐘
 
 # ========== Lock 機制 ==========
 def open_lock_ws():
