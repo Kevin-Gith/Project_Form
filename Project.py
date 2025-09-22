@@ -45,8 +45,6 @@ USER_CREDENTIALS = {
 # 優先順序
 USER_PRIORITY = {"Sam": 1, "Vivian": 2, "Lillian": 3, "Wendy": 4}
 
-LOCK_TIMEOUT = 30  # 鎖定時間上限（秒），例如 300秒 = 5分鐘
-
 # ========== Lock 機制 ==========
 def open_lock_ws():
     sh = client.open(SHEET_NAME)
@@ -61,8 +59,10 @@ def load_lock_df():
     ws_lock = open_lock_ws()
     data = ws_lock.get_all_records()
     df_lock = pd.DataFrame(data)
-    if "User" not in df_lock.columns: df_lock["User"] = ""
-    if "Locked_Time" not in df_lock.columns: df_lock["Locked_Time"] = ""
+    if "User" not in df_lock.columns: 
+        df_lock["User"] = ""
+    if "Locked_Time" not in df_lock.columns: 
+        df_lock["Locked_Time"] = ""
     return df_lock, ws_lock
 
 def acquire_lock(username: str) -> (bool, str):
@@ -70,33 +70,32 @@ def acquire_lock(username: str) -> (bool, str):
     active = df_lock[df_lock["User"] != ""]
     now = datetime.datetime.now()
 
+    # 沒有人鎖 → 直接鎖上
     if active.empty:
         ws_lock.append_row([username, now.strftime("%Y-%m-%d %H:%M:%S")])
         return True, ""
 
     current_user = active.iloc[0]["User"]
-    lock_time = datetime.datetime.strptime(active.iloc[0]["Locked_Time"], "%Y-%m-%d %H:%M:%S")
+    lock_time = datetime.datetime.strptime(
+        active.iloc[0]["Locked_Time"], "%Y-%m-%d %H:%M:%S"
+    )
     time_diff = (now - lock_time).total_seconds()
 
-    # 🔑 如果 Lock 已經超過期限 → 自動釋放並換成自己
-    if time_diff > LOCK_TIMEOUT:
-        ws_lock.update("A2:B2", [[username, now.strftime("%Y-%m-%d %H:%M:%S")]])
-        return True, ""
-
-    # 如果已經是自己 → 不要重新鎖
+    # 如果已經是自己 → 通過，不重新鎖
     if current_user == username:
         return True, ""
 
-    # 不是自己 → 檢查 3 秒內是否搶佔
+    # 不是自己 → 檢查是否 3 秒內搶佔
     if time_diff <= 3:
         current_pri = USER_PRIORITY.get(current_user, 99)
         new_pri = USER_PRIORITY.get(username, 99)
-        if new_pri < current_pri:  # 搶走鎖
+        if new_pri < current_pri:  # 優先權較高 → 搶走鎖
             ws_lock.update("A2:B2", [[username, now.strftime("%Y-%m-%d %H:%M:%S")]])
             return True, ""
         else:
             return False, current_user
     else:
+        # 超過 3 秒後 → 鎖定者持續擁有，不會自動解鎖
         return False, current_user
 
 def release_lock(username: str):
@@ -160,7 +159,26 @@ def login_page():
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username]["password"] == password:
             st.session_state["logged_in"] = True
             st.session_state["user"] = USER_CREDENTIALS[username]["name"]
-            st.session_state["page"] = "form"
+
+            # 登入後 → 檢查 Lock 狀態
+            df_lock, _ = load_lock_df()
+            active = df_lock[df_lock["User"] != ""]
+            if not active.empty:
+                current_user = active.iloc[0]["User"]
+                if current_user == st.session_state["user"]:
+                    # 如果自己已經持有 Lock → 載入最後一筆紀錄，進入預覽
+                    records = sheet.get_all_records()
+                    if records:
+                        st.session_state["record"] = records[-1]
+                        st.session_state["page"] = "preview"
+                    else:
+                        st.session_state["page"] = "form"
+                else:
+                    # 有人佔用 Lock → 還是先進入表單，送出時會被擋下
+                    st.session_state["page"] = "form"
+            else:
+                # 沒有 Lock → 正常進入表單
+                st.session_state["page"] = "form"
         else:
             st.error("帳號或密碼錯誤，請重新輸入")
 
