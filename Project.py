@@ -98,18 +98,26 @@ def acquire_lock(username: str) -> (bool, str):
     now = datetime.datetime.now()
 
     if active.empty:
+        # 沒人鎖 → 幫這個使用者鎖上
         ws_lock.append_row([username, now.strftime("%Y-%m-%d %H:%M:%S")])
         return True, ""
 
     current_user = active.iloc[0]["User"]
-    lock_time = datetime.datetime.strptime(active.iloc[0]["Locked_Time"], "%Y-%m-%d %H:%M:%S")
-    time_diff = (now - lock_time).total_seconds()
+    lock_time = datetime.datetime.strptime(
+        active.iloc[0]["Locked_Time"], "%Y-%m-%d %H:%M:%S"
+    )
 
+    # 如果已經是自己 → 不要重新鎖，直接通過
+    if current_user == username:
+        return True, ""
+
+    # 不是自己 → 檢查 3 秒內是否搶佔
+    time_diff = (now - lock_time).total_seconds()
     if time_diff <= 3:
         current_pri = USER_PRIORITY.get(current_user, 99)
         new_pri = USER_PRIORITY.get(username, 99)
-        if new_pri < current_pri:  # 搶走Lock
-            ws_lock.update(f"A2:B2", [[username, now.strftime("%Y-%m-%d %H:%M:%S")]])
+        if new_pri < current_pri:  # 優先權高 → 搶走鎖
+            ws_lock.update("A2:B2", [[username, now.strftime("%Y-%m-%d %H:%M:%S")]])
             return True, ""
         else:
             return False, current_user
