@@ -6,6 +6,7 @@ import os
 from openpyxl import load_workbook
 from google.oauth2.service_account import Credentials
 import datetime
+import json
 
 # ========== Google Sheet 設定 ==========
 SHEET_NAME = "Project_Form"
@@ -59,9 +60,9 @@ def load_lock_df():
     ws_lock = open_lock_ws()
     data = ws_lock.get_all_records()
     df_lock = pd.DataFrame(data)
-    if "User" not in df_lock.columns: 
+    if "User" not in df_lock.columns:
         df_lock["User"] = ""
-    if "Locked_Time" not in df_lock.columns: 
+    if "Locked_Time" not in df_lock.columns:
         df_lock["Locked_Time"] = ""
     return df_lock, ws_lock
 
@@ -70,7 +71,6 @@ def acquire_lock(username: str) -> (bool, str):
     active = df_lock[df_lock["User"] != ""]
     now = datetime.datetime.now()
 
-    # 沒有人鎖 → 直接鎖上
     if active.empty:
         ws_lock.append_row([username, now.strftime("%Y-%m-%d %H:%M:%S")])
         return True, ""
@@ -81,21 +81,18 @@ def acquire_lock(username: str) -> (bool, str):
     )
     time_diff = (now - lock_time).total_seconds()
 
-    # 如果已經是自己 → 通過，不重新鎖
     if current_user == username:
         return True, ""
 
-    # 不是自己 → 檢查是否 3 秒內搶佔
     if time_diff <= 3:
         current_pri = USER_PRIORITY.get(current_user, 99)
         new_pri = USER_PRIORITY.get(username, 99)
-        if new_pri < current_pri:  # 優先權較高 → 搶走鎖
+        if new_pri < current_pri:
             ws_lock.update("A2:B2", [[username, now.strftime("%Y-%m-%d %H:%M:%S")]])
             return True, ""
         else:
             return False, current_user
     else:
-        # 超過 3 秒後 → 鎖定者持續擁有，不會自動解鎖
         return False, current_user
 
 def release_lock(username: str):
@@ -116,7 +113,7 @@ def generate_project_number(odm, product_app, cooling):
     odm_code = odm.split(")")[0].strip("(")
     prod_code = product_app.split(")")[0].strip("(")
     cool_code = cooling.split(")")[0].strip("(")
-    prefix = f"{odm_code}{prod_code}{cool_code}"  # 6碼連續
+    prefix = f"{odm_code}{prod_code}{cool_code}"
 
     records = sheet.get_all_records()
     max_num = 0
@@ -135,7 +132,7 @@ def generate_project_number(odm, product_app, cooling):
 def save_to_google_sheet(record):
     record_for_sheet = record.copy()
     record_for_sheet["Project_Number"] = record.get("Project_Number", "")
-    record_for_sheet["Spec_Type"] = ", ".join(record.get("Spec_Type", {}).keys())
+    record_for_sheet["Spec_Type"] = json.dumps(record.get("Spec_Type", {}), ensure_ascii=False)
     record_for_sheet["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
     row = [record_for_sheet.get(col, "") for col in SHEET_HEADERS]
     sheet.append_row(row)
@@ -161,36 +158,24 @@ def login_page():
             st.session_state["logged_in"] = True
             st.session_state["user"] = USER_CREDENTIALS[username]["name"]
 
-            # ✅ 登入後先檢查 Lock
             df_lock, _ = load_lock_df()
             active = df_lock[df_lock["User"] != ""]
-
-            if not active.empty:
-                current_user = active.iloc[0]["User"]
-
-                if current_user == st.session_state["user"]:
-                    # ✅ 自己持有 Lock → 取屬於自己的「最後一筆」紀錄進入預覽
-                    records = sheet.get_all_records()  # list[dict]
-                    user = st.session_state["user"]
-                    user_records = [r for r in records if str(r.get("Sales_User", "")).strip() == user]
-
-                    if user_records:
-                        last = user_records[-1]
-
-                        # 防止 Spec_Type 從試算表回來是字串導致 preview 迴圈 .items() 當掉
-                        if isinstance(last.get("Spec_Type"), str):
+            if not active.empty and active.iloc[0]["User"] == st.session_state["user"]:
+                records = sheet.get_all_records()
+                user_records = [r for r in records if str(r.get("Sales_User", "")) == st.session_state["user"]]
+                if user_records:
+                    last = user_records[-1]
+                    if isinstance(last.get("Spec_Type"), str):
+                        try:
+                            last["Spec_Type"] = json.loads(last["Spec_Type"])
+                        except:
                             last["Spec_Type"] = {}
-
-                        st.session_state["record"] = last
-                        st.session_state["page"] = "preview"
-                    else:
-                        # 沒有屬於自己的紀錄，回到表單填寫
-                        st.session_state["page"] = "form"
+                    st.session_state["record"] = last
+                    st.session_state["from_login_preview"] = True
+                    st.session_state["page"] = "preview"
                 else:
-                    # 有人持有 Lock 但不是自己 → 進入表單（送出時會被擋）
                     st.session_state["page"] = "form"
             else:
-                # 沒有 Lock → 正常進入表單
                 st.session_state["page"] = "form"
         else:
             st.error("帳號或密碼錯誤，請重新輸入")
@@ -320,6 +305,7 @@ def form_page():
             project_number = generate_project_number(customer_info["ODM_Customers"], project_info["Product_Application"], project_info["Cooling_Solution"])
             st.session_state["record"] = {"Project_Number": project_number, **customer_info, **project_info, "Spec_Type": spec_info}
             st.session_state["submitted"] = False
+            st.session_state["from_login_preview"] = False
             st.session_state["page"] = "preview"
 
 # ========== 頁面：預覽 ==========
@@ -338,29 +324,45 @@ def preview_page():
         st.write(f"**{v}：** {record.get(k, '')}")
 
     st.subheader("C. 規格資訊")
-    for section, fields in record.get("Spec_Type", {}).items():
+    spec_type = record.get("Spec_Type", {})
+    if isinstance(spec_type, str):
+        try:
+            spec_type = json.loads(spec_type)
+        except:
+            spec_type = {}
+    for section, fields in spec_type.items():
         st.markdown(f"**{section}**")
         for k, v in fields.items():
-            st.write(f"{k}: {v}")
+            if v:
+                st.write(f"{k}: {v}")
 
-    col1, col2 = st.columns(2)
-    if col1.button("🔙 返回修改"):
-        release_lock(st.session_state["user"])
-        st.session_state["page"] = "form"
-
-    if not st.session_state.get("submitted", False):
-        if col2.button("💾 確認送出", key="confirm_submit"):
-            save_to_google_sheet(record)
-            excel_data = export_to_template(record)
+    if st.session_state.get("from_login_preview", False):
+        excel_data = export_to_template(record)
+        st.download_button(
+            label="⬇️ 下載Excel檔案",
+            data=excel_data,
+            file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        st.info("ℹ️ 這是你最後一次提交的紀錄，僅提供下載，不可修改或重送")
+    else:
+        col1, col2 = st.columns(2)
+        if col1.button("🔙 返回修改"):
             release_lock(st.session_state["user"])
-            st.download_button(
-                label="⬇️ 自動下載Excel檔案",
-                data=excel_data,
-                file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-            st.success("✅ 申請表單已準備好下載")
-            st.session_state["submitted"] = True
+            st.session_state["page"] = "form"
+        if not st.session_state.get("submitted", False):
+            if col2.button("💾 確認送出", key="confirm_submit"):
+                save_to_google_sheet(record)
+                excel_data = export_to_template(record)
+                release_lock(st.session_state["user"])
+                st.download_button(
+                    label="⬇️ 自動下載Excel檔案",
+                    data=excel_data,
+                    file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+                st.success("✅ 申請表單已準備好下載")
+                st.session_state["submitted"] = True
 
 # ========== 主程式 ==========
 def main():
