@@ -24,12 +24,14 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
 
-# 固定 Google Sheet 欄位順序（含 Project_Number）
+# 固定 Google Sheet 欄位順序
 SHEET_HEADERS = [
     "Project_Number", "Sales_User", "ODM_Customers", "Brand_Customers", "Application_Purpose",
     "Project_Name", "Proposal_Date", "Product_Application", "Cooling_Solution",
     "Delivery_Location", "Sample_Date", "Sample_Qty", "Demand_Qty",
-    "SI", "PV", "MV", "MP", "Spec_Type", "Update_Time"
+    "SI", "PV", "MV", "MP", "Spec_Type", "Update_Time",
+    "Sales_Manager", "RD_Manager", "Apply_Date", "Applicant_Name",
+    "Fill_Date", "Spec_Writer", "Sales_Review", "RD_Review", "Approval"
 ]
 
 # ========== 使用者帳號密碼 ==========
@@ -42,37 +44,6 @@ USER_CREDENTIALS = {
 
 # 優先順序
 USER_PRIORITY = {"Sam": 1, "Vivian": 2, "Lillian": 3, "Wendy": 4}
-
-# ========== 欄位單位對照表 ==========
-UNIT_MAP = {
-    "Air_Flow": "RPM/Voltage/CFM",
-    "Tcase_Max": "°C",
-    "Thermal_Resistance": "°C/W",
-    "Max_Power": "W",
-    "Chip_Length": "mm",
-    "Chip_Width": "mm",
-    "Chip_Height": "mm",
-    "Length": "mm",
-    "Width": "mm",
-    "Height": "mm",
-    "Input_Voltage": "V",
-    "Input_Current": "A",
-    "PQ": "",
-    "Speed": "RPM",
-    "Noise": "dB",
-    "Tone": "",
-    "Sone": "",
-    "Weight": "g",
-    "Connector": "",
-    "Wiring": "",
-    "Cable_Length": "mm",
-    "Plate_Form": "",
-    "Tj_Max": "°C",
-    "T_Inlet": "°C",
-    "Flow_Rate": "LPM",
-    "Impedance": "KPa",
-    "Max_Loading": "lbs"
-}
 
 # ========== Lock 機制 ==========
 def open_lock_ws():
@@ -98,16 +69,13 @@ def acquire_lock(username: str) -> (bool, str):
     now = datetime.datetime.now()
 
     if active.empty:
-        # 沒人鎖 → 幫這個使用者鎖上
         ws_lock.append_row([username, now.strftime("%Y-%m-%d %H:%M:%S")])
         return True, ""
 
     current_user = active.iloc[0]["User"]
-    lock_time = datetime.datetime.strptime(
-        active.iloc[0]["Locked_Time"], "%Y-%m-%d %H:%M:%S"
-    )
+    lock_time = datetime.datetime.strptime(active.iloc[0]["Locked_Time"], "%Y-%m-%d %H:%M:%S")
 
-    # 如果已經是自己 → 不要重新鎖，直接通過
+    # 如果已經是自己 → 不要重新鎖
     if current_user == username:
         return True, ""
 
@@ -116,7 +84,7 @@ def acquire_lock(username: str) -> (bool, str):
     if time_diff <= 3:
         current_pri = USER_PRIORITY.get(current_user, 99)
         new_pri = USER_PRIORITY.get(username, 99)
-        if new_pri < current_pri:  # 優先權高 → 搶走鎖
+        if new_pri < current_pri:  # 搶走鎖
             ws_lock.update("A2:B2", [[username, now.strftime("%Y-%m-%d %H:%M:%S")]])
             return True, ""
         else:
@@ -131,19 +99,18 @@ def release_lock(username: str):
             ws_lock.update_cell(i + 2, 1, "")
             ws_lock.update_cell(i + 2, 2, "")
 
-# ========== 登出功能 ==========
+# ========== 登出 ==========
 def logout():
     st.session_state.clear()
     st.session_state["page"] = "login"
     st.session_state["logged_in"] = False
 
-# ========== 專案編號產生 (修改後格式) ==========
+# ========== 專案編號產生 ==========
 def generate_project_number(odm, product_app, cooling):
     odm_code = odm.split(")")[0].strip("(")
     prod_code = product_app.split(")")[0].strip("(")
     cool_code = cooling.split(")")[0].strip("(")
-
-    prefix = f"{odm_code}{prod_code}{cool_code}"  # → 6碼連續
+    prefix = f"{odm_code}{prod_code}{cool_code}"  # 6碼連續
 
     records = sheet.get_all_records()
     max_num = 0
@@ -155,21 +122,19 @@ def generate_project_number(odm, product_app, cooling):
                 max_num = max(max_num, seq)
             except ValueError:
                 pass
-
     new_seq = max_num + 1
     return f"{prefix}-{new_seq:03d}"
 
-# ========== 儲存到 Google Sheet ==========
+# ========== 儲存 Google Sheet ==========
 def save_to_google_sheet(record):
     record_for_sheet = record.copy()
     record_for_sheet["Project_Number"] = record.get("Project_Number", "")
     record_for_sheet["Spec_Type"] = ", ".join(record.get("Spec_Type", {}).keys())
     record_for_sheet["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
-
     row = [record_for_sheet.get(col, "") for col in SHEET_HEADERS]
     sheet.append_row(row)
 
-# ========== 匯出到 Excel 模板 ==========
+# ========== 匯出 Excel ==========
 def export_to_template(record):
     template_path = os.path.join(os.path.dirname(__file__), "Kipo_Project_Form.xlsx")
     wb = load_workbook(template_path)
@@ -184,7 +149,6 @@ def login_page():
     st.title("💻 Kipo專案申請系統")
     username = st.text_input("帳號", key="login_username")
     password = st.text_input("密碼", type="password", key="login_password")
-
     if st.button("🔑 登入"):
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username]["password"] == password:
             st.session_state["logged_in"] = True
@@ -234,6 +198,13 @@ def render_project_info():
     return {"Product_Application": product_app, "Cooling_Solution": cooling, "Delivery_Location": delivery,
             "Sample_Date": sample_date.strftime("%Y/%m/%d"), "Sample_Qty": sample_qty,
             "Demand_Qty": demand_qty, "SI": si, "PV": pv, "MV": mv, "MP": mp}
+
+# ========== 頁面：D. 可行性評估 ==========
+def render_feasibility():
+    st.header("D. 可行性評估")
+    sales_mgr = st.text_input("業務主管", key="sales_mgr")
+    rd_mgr = st.text_input("研發主管", key="rd_mgr")
+    return {"Sales_Manager": sales_mgr, "RD_Manager": rd_mgr}
 
 # ========== 頁面：C. 規格資訊 ==========
 def render_spec_info():
@@ -301,6 +272,7 @@ def form_page():
     if st.button("🚪 登出"): logout()
     customer_info = render_customer_info()
     project_info = render_project_info()
+    feasibility_info = render_feasibility()
     spec_info = render_spec_info()
 
     if st.button("✅ 完成"):
@@ -316,7 +288,7 @@ def form_page():
             st.error("規格資訊請至少選擇一種方案")
         else:
             project_number = generate_project_number(customer_info["ODM_Customers"], project_info["Product_Application"], project_info["Cooling_Solution"])
-            st.session_state["record"] = {"Project_Number": project_number, **customer_info, **project_info, "Spec_Type": spec_info}
+            st.session_state["record"] = {"Project_Number": project_number, **customer_info, **project_info, **feasibility_info, "Spec_Type": spec_info}
             st.session_state["submitted"] = False
             st.session_state["page"] = "preview"
 
@@ -326,32 +298,39 @@ def preview_page():
     record = st.session_state.get("record", {})
     st.subheader(f"專案編號：{record.get('Project_Number','')}")
     st.write(f"### 北辦業務：{record.get('Sales_User','')}")
+
     st.subheader("A. 客戶資訊")
     for k, v in {"ODM_Customers": "ODM客戶(RD)", "Brand_Customers": "品牌客戶(RD)", "Application_Purpose": "申請目的"}.items():
         st.write(f"**{v}：** {record.get(k, '')}")
+
     st.subheader("B. 開案資訊")
-    for k, v in {"Product_Application": "產品應用", "Cooling_Solution": "散熱方式"}.items():
+    for k, v in {"Product_Application": "產品應用", "Cooling_Solution": "散熱方式", "Delivery_Location": "交貨地點"}.items():
         st.write(f"**{v}：** {record.get(k, '')}")
+
     st.subheader("C. 規格資訊")
     for section, fields in record.get("Spec_Type", {}).items():
         st.markdown(f"**{section}**")
         for k, v in fields.items():
             st.write(f"{k}: {v}")
+
     col1, col2 = st.columns(2)
     if col1.button("🔙 返回修改"):
         release_lock(st.session_state["user"])
         st.session_state["page"] = "form"
-    if "submitted" not in st.session_state: st.session_state["submitted"] = False
-    if not st.session_state["submitted"]:
+
+    if not st.session_state.get("submitted", False):
         if col2.button("💾 確認送出", key="confirm_submit"):
             save_to_google_sheet(record)
-            st.session_state["excel_data"] = export_to_template(record)
-            st.session_state["submitted"] = True
+            excel_data = export_to_template(record)
             release_lock(st.session_state["user"])
-            st.rerun()
-    else:
-        st.download_button(label="⬇️ 下載Excel檔案", data=st.session_state["excel_data"], file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        st.success("✅ 已準備好下載Excel檔案")
+            st.download_button(
+                label="⬇️ 自動下載Excel檔案",
+                data=excel_data,
+                file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            st.success("✅ 表單已送出並下載完成")
+            st.session_state["submitted"] = True
 
 # ========== 主程式 ==========
 def main():
@@ -370,7 +349,7 @@ if __name__ == "__main__":
 #1.使用者登入帳號密碼(當帳號密碼輸入正確時，按下登入按鈕後，會轉跳畫面)
 
 #使用者Sam -> 帳號：sam@kipotec.com.tw / 密碼：Kipo-0926969586$$$
-#使用者Vivian -> 帳號：sale1@kipotec.com.tw / 密碼：Kipo-0917369466$$$
+#使用者Vivian -> 帳號：sale1@kipotec.com.tw / 密碼：Kipo-0917369466$$$  
 #使用者Wendy -> 帳號：sale5@kipotec.com.tw / 密碼：Kipo-0925698417$$$
 #使用者Lillian -> 帳號：sale2@kipotec.com.tw / 密碼：Kipo-0905038111$$$
 
