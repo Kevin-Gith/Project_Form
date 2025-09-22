@@ -199,13 +199,6 @@ def render_project_info():
             "Sample_Date": sample_date.strftime("%Y/%m/%d"), "Sample_Qty": sample_qty,
             "Demand_Qty": demand_qty, "SI": si, "PV": pv, "MV": mv, "MP": mp}
 
-# ========== 頁面：D. 可行性評估 ==========
-def render_feasibility():
-    st.header("D. 可行性評估")
-    sales_mgr = st.text_input("業務主管", key="sales_mgr")
-    rd_mgr = st.text_input("研發主管", key="rd_mgr")
-    return {"Sales_Manager": sales_mgr, "RD_Manager": rd_mgr}
-
 # ========== 頁面：C. 規格資訊 ==========
 def render_spec_info():
     st.header("C. 規格資訊")
