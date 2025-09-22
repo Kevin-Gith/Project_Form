@@ -280,7 +280,7 @@ def form_page():
             st.error("規格資訊請至少選擇一種方案")
         else:
             project_number = generate_project_number(customer_info["ODM_Customers"], project_info["Product_Application"], project_info["Cooling_Solution"])
-            st.session_state["record"] = {"Project_Number": project_number, **customer_info, **project_info, **feasibility_info, "Spec_Type": spec_info}
+            st.session_state["record"] = {"Project_Number": project_number, **customer_info, **project_info, "Spec_Type": spec_info}
             st.session_state["submitted"] = False
             st.session_state["page"] = "preview"
 
