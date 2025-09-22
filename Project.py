@@ -166,6 +166,10 @@ def export_to_template(record):
     # C. 規格資訊
     specs = record.get("Spec_Type", {})
 
+    # 🔑 防呆：如果不是 dict，就改成 {}
+    if not isinstance(specs, dict):
+        specs = {}
+
     if "Air Cooling氣冷" in specs:
         ws["B20"] = specs["Air Cooling氣冷"].get("Air_Flow", "")
         ws["E20"] = specs["Air Cooling氣冷"].get("Tcase_Max", "")
