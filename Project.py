@@ -45,6 +45,8 @@ USER_CREDENTIALS = {
 # 優先順序
 USER_PRIORITY = {"Sam": 1, "Vivian": 2, "Lillian": 3, "Wendy": 4}
 
+LOCK_TIMEOUT = 3  # 鎖定時間上限（秒），例如 300秒 = 5分鐘
+
 # ========== Lock 機制 ==========
 def open_lock_ws():
     sh = client.open(SHEET_NAME)
@@ -74,13 +76,18 @@ def acquire_lock(username: str) -> (bool, str):
 
     current_user = active.iloc[0]["User"]
     lock_time = datetime.datetime.strptime(active.iloc[0]["Locked_Time"], "%Y-%m-%d %H:%M:%S")
+    time_diff = (now - lock_time).total_seconds()
+
+    # 🔑 如果 Lock 已經超過期限 → 自動釋放並換成自己
+    if time_diff > LOCK_TIMEOUT:
+        ws_lock.update("A2:B2", [[username, now.strftime("%Y-%m-%d %H:%M:%S")]])
+        return True, ""
 
     # 如果已經是自己 → 不要重新鎖
     if current_user == username:
         return True, ""
 
     # 不是自己 → 檢查 3 秒內是否搶佔
-    time_diff = (now - lock_time).total_seconds()
     if time_diff <= 3:
         current_pri = USER_PRIORITY.get(current_user, 99)
         new_pri = USER_PRIORITY.get(username, 99)
@@ -321,7 +328,7 @@ def preview_page():
                 file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
-            st.success("✅ 表單已送出並下載完成")
+            st.success("✅ 申請表單已準備好下載")
             st.session_state["submitted"] = True
 
 # ========== 主程式 ==========
