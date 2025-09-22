@@ -232,12 +232,56 @@ def render_spec_info():
     st.header("C. 規格資訊")
     spec_options = st.multiselect("選擇散熱方案", ["Air Cooling氣冷", "Fan風扇", "Liquid Cooling水冷"], key="spec_options")
     spec_data = {}
+
     if "Air Cooling氣冷" in spec_options:
-        spec_data["Air Cooling氣冷"] = {"Air_Flow": st.text_input("Air Flow", key="air_flow")}
+        st.subheader("Air Cooling氣冷")
+        spec_data["Air Cooling氣冷"] = {
+            "Air_Flow": st.text_input("Air Flow (RPM/Voltage/CFM)", key="air_flow"),
+            "Tcase_Max": st.text_input("Tcase_Max (°C)", key="air_tcase"),
+            "Thermal_Resistance": st.text_input("Thermal Resistance (°C/W)", key="air_res"),
+            "Max_Power": st.text_input("Max Power (W)", key="air_power"),
+            "Chip_Length": st.text_input("Chip_Length (mm)", key="air_len"),
+            "Chip_Width": st.text_input("Chip_Width (mm)", key="air_wid"),
+            "Chip_Height": st.text_input("Chip_Height (mm)", key="air_hei"),
+        }
+
     if "Fan風扇" in spec_options:
-        spec_data["Fan風扇"] = {"Max_Power": st.text_input("Max Power", key="fan_power")}
+        st.subheader("Fan風扇")
+        spec_data["Fan風扇"] = {
+            "Max_Power": st.text_input("Max Power (W)", key="fan_power"),
+            "Input_Voltage": st.text_input("Input voltage (V)", key="fan_volt"),
+            "Input_Current": st.text_input("Input current (A)", key="fan_curr"),
+            "PQ": st.text_input("P-Q", key="fan_pq"),
+            "Speed": st.text_input("Rotational speed (RPM)", key="fan_speed"),
+            "Noise": st.text_input("Noise (dB)", key="fan_noise"),
+            "Tone": st.text_input("Tone", key="fan_tone"),
+            "Sone": st.text_input("Sone", key="fan_sone"),
+            "Weight": st.text_input("Weight (g)", key="fan_weight"),
+            "Connector": st.text_input("端子頭型號", key="fan_con"),
+            "Wiring": st.text_input("線序", key="fan_wire"),
+            "Cable_Length": st.text_input("出框線長", key="fan_cable"),
+            "Length": st.text_input("Length (mm)", key="fan_len"),
+            "Width": st.text_input("Width (mm)", key="fan_wid"),
+            "Height": st.text_input("Height (mm)", key="fan_hei"),
+        }
+
     if "Liquid Cooling水冷" in spec_options:
-        spec_data["Liquid Cooling水冷"] = {"Plate_Form": st.text_input("Plate Form", key="liq_plate")}
+        st.subheader("Liquid Cooling水冷")
+        spec_data["Liquid Cooling水冷"] = {
+            "Plate_Form": st.text_input("Plate Form", key="liq_plate"),
+            "Max_Power": st.text_input("Max Power (W)", key="liq_max_power"),
+            "Tj_Max": st.text_input("Tj_Max (°C)", key="liq_tj"),
+            "Tcase_Max": st.text_input("Tcase_Max (°C)", key="liq_tcase"),
+            "T_Inlet": st.text_input("T_Inlet (°C)", key="liq_inlet"),
+            "Thermal_Resistance": st.text_input("Thermal Resistance (°C/W)", key="liq_res"),
+            "Flow_Rate": st.text_input("Flow rate (LPM)", key="liq_flow"),
+            "Impedance": st.text_input("Impedance (KPa)", key="liq_imp"),
+            "Max_Loading": st.text_input("Max loading (lbs)", key="liq_load"),
+            "Chip_Length": st.text_input("Chip_Length (mm)", key="liq_chip_length"),
+            "Chip_Width": st.text_input("Chip_Width (mm)", key="liq_chip_width"),
+            "Chip_Height": st.text_input("Chip_Height (mm)", key="liq_chip_height"),
+        }
+
     return spec_data
 
 # ========== 頁面：表單 ==========
