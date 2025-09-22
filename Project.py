@@ -138,85 +138,99 @@ def save_to_google_sheet(record):
 
 # ========== 匯出到 Excel 模板 ==========
 def export_to_template(record):
-    def safe_value(val):
-        """確保寫入 Excel 的值型別正確"""
-        if val is None:
-            return ""
-        if isinstance(val, (dict, list)):
-            return str(val)
-        return str(val)
-
     template_path = os.path.join(os.path.dirname(__file__), "Kipo_Project_Form.xlsx")
     wb = load_workbook(template_path)
     ws = wb.active
 
     # A. 客戶資訊
-    ws["E5"] = safe_value(record.get("Project_Number", ""))
-    ws["B5"] = safe_value(record.get("Sales_User", ""))
-    ws["B7"] = safe_value(record.get("ODM_Customers", ""))
-    ws["E7"] = safe_value(record.get("Brand_Customers", ""))
-    ws["B8"] = safe_value(record.get("Project_Name", ""))
-    ws["E8"] = safe_value(record.get("Proposal_Date", ""))
-    ws["B9"] = safe_value(record.get("Application_Purpose", ""))
+    ws["E5"] = record.get("Project_Number", "")
+    ws["B5"] = record.get("Sales_User", "")
+    ws["B7"] = record.get("ODM_Customers", "")
+    ws["E7"] = record.get("Brand_Customers", "")
+    ws["B8"] = record.get("Project_Name", "")
+    ws["E8"] = record.get("Proposal_Date", "")
+    ws["B9"] = record.get("Application_Purpose", "")
 
     # B. 開案資訊
-    ws["B11"] = safe_value(record.get("Product_Application", ""))
-    ws["E11"] = safe_value(record.get("Cooling_Solution", ""))
-    ws["E13"] = safe_value(record.get("Delivery_Location", ""))
-    ws["B12"] = safe_value(record.get("Sample_Date", ""))
-    ws["E12"] = safe_value(record.get("Sample_Qty", ""))
-    ws["B13"] = safe_value(record.get("Demand_Qty", ""))
-    ws["B14"] = safe_value(record.get("SI", ""))
-    ws["E14"] = safe_value(record.get("PV", ""))
-    ws["B15"] = safe_value(record.get("MV", ""))
-    ws["E15"] = safe_value(record.get("MP", ""))
+    ws["B11"] = record.get("Product_Application", "")
+    ws["E11"] = record.get("Cooling_Solution", "")
+    ws["E13"] = record.get("Delivery_Location", "")
+    ws["B12"] = record.get("Sample_Date", "")
+    ws["E12"] = record.get("Sample_Qty", "")
+    ws["B13"] = record.get("Demand_Qty", "")
+    ws["B14"] = record.get("SI", "")
+    ws["E14"] = record.get("PV", "")
+    ws["B15"] = record.get("MV", "")
+    ws["E15"] = record.get("MP", "")
 
-    # C. 規格資訊
+    # ====== C. 規格資訊 ======
+    spec_map = {
+        "Air Cooling氣冷": "A17",
+        "Fan風扇": "C17",
+        "Liquid Cooling水冷": "E17"
+    }
+
+    # 單位定義表（可自行擴充）
+    UNIT_MAP = {
+        "Air_Flow": "RPM/Voltage/CFM",
+        "Tcase_Max": "°C",
+        "Thermal_Resistance": "°C/W",
+        "Max_Power": "W",
+        "Chip_Length": "mm",
+        "Chip_Width": "mm",
+        "Chip_Height": "mm",
+        "Input_Voltage": "V",
+        "Input_Current": "A",
+        "Speed": "RPM",
+        "Noise": "dB",
+        "Sone": "sone",
+        "Weight": "g",
+        "Cable_Length": "mm",
+        "Length": "mm",
+        "Width": "mm",
+        "Height": "mm",
+        "Tj_Max": "°C",
+        "T_Inlet": "°C",
+        "Flow_Rate": "LPM",
+        "Impedance": "KPa",
+        "Max_Loading": "lbs"
+    }
+
     specs = record.get("Spec_Type", {})
     if not isinstance(specs, dict):
         specs = {}
 
-    if "Air Cooling氣冷" in specs:
-        ws["B20"] = safe_value(specs["Air Cooling氣冷"].get("Air_Flow", ""))
-        ws["E20"] = safe_value(specs["Air Cooling氣冷"].get("Tcase_Max", ""))
-        ws["B21"] = safe_value(specs["Air Cooling氣冷"].get("Thermal_Resistance", ""))
-        ws["E21"] = safe_value(specs["Air Cooling氣冷"].get("Max_Power", ""))
-        ws["B22"] = safe_value(specs["Air Cooling氣冷"].get("Chip_Length", ""))
-        ws["E22"] = safe_value(specs["Air Cooling氣冷"].get("Chip_Width", ""))
-        ws["B23"] = safe_value(specs["Air Cooling氣冷"].get("Chip_Height", ""))
+    for section, fields in specs.items():
+        if section in spec_map:
+            lines = [section, ""]
 
-    if "Fan風扇" in specs:
-        ws["B25"] = safe_value(specs["Fan風扇"].get("Max_Power", ""))
-        ws["E25"] = safe_value(specs["Fan風扇"].get("Input_Voltage", ""))
-        ws["B26"] = safe_value(specs["Fan風扇"].get("Input_Current", ""))
-        ws["E26"] = safe_value(specs["Fan風扇"].get("PQ", ""))
-        ws["B27"] = safe_value(specs["Fan風扇"].get("Speed", ""))
-        ws["E27"] = safe_value(specs["Fan風扇"].get("Noise", ""))
-        ws["B28"] = safe_value(specs["Fan風扇"].get("Tone", ""))
-        ws["E28"] = safe_value(specs["Fan風扇"].get("Sone", ""))
-        ws["B29"] = safe_value(specs["Fan風扇"].get("Weight", ""))
-        ws["E29"] = safe_value(specs["Fan風扇"].get("Connector", ""))
-        ws["B30"] = safe_value(specs["Fan風扇"].get("Wiring", ""))
-        ws["E30"] = safe_value(specs["Fan風扇"].get("Cable_Length", ""))
-        ws["B31"] = safe_value(specs["Fan風扇"].get("Length", ""))
-        ws["E31"] = safe_value(specs["Fan風扇"].get("Width", ""))
-        ws["B32"] = safe_value(specs["Fan風扇"].get("Height", ""))
+            # Chip/Length/Width/Height 一律排最後
+            if section == "Air Cooling氣冷":
+                last_keys = ["Chip_Length", "Chip_Width", "Chip_Height"]
+            elif section == "Fan風扇":
+                last_keys = ["Length", "Width", "Height"]
+            elif section == "Liquid Cooling水冷":
+                last_keys = ["Chip_Length", "Chip_Width", "Chip_Height"]
+            else:
+                last_keys = []
 
-    if "Liquid Cooling水冷" in specs:
-        ws["B35"] = safe_value(specs["Liquid Cooling水冷"].get("Plate_Form", ""))
-        ws["E35"] = safe_value(specs["Liquid Cooling水冷"].get("Max_Power", ""))
-        ws["B36"] = safe_value(specs["Liquid Cooling水冷"].get("Tj_Max", ""))
-        ws["E36"] = safe_value(specs["Liquid Cooling水冷"].get("Tcase_Max", ""))
-        ws["B37"] = safe_value(specs["Liquid Cooling水冷"].get("T_Inlet", ""))
-        ws["E37"] = safe_value(specs["Liquid Cooling水冷"].get("Thermal_Resistance", ""))
-        ws["B38"] = safe_value(specs["Liquid Cooling水冷"].get("Flow_Rate", ""))
-        ws["E38"] = safe_value(specs["Liquid Cooling水冷"].get("Impedance", ""))
-        ws["B39"] = safe_value(specs["Liquid Cooling水冷"].get("Max_Loading", ""))
-        ws["E39"] = safe_value(specs["Liquid Cooling水冷"].get("Chip_Length", ""))
-        ws["B40"] = safe_value(specs["Liquid Cooling水冷"].get("Chip_Width", ""))
-        ws["E40"] = safe_value(specs["Liquid Cooling水冷"].get("Chip_Height", ""))
+            # 先列出一般欄位
+            for k, v in fields.items():
+                if k not in last_keys:
+                    unit = UNIT_MAP.get(k, "")
+                    unit_str = f" ({unit})" if unit else ""
+                    lines.append(f"{k}{unit_str}: {v}")
 
-    # 輸出 Bytes
+            # 再列出最後的尺寸類欄位
+            for k in last_keys:
+                if k in fields:
+                    unit = UNIT_MAP.get(k, "")
+                    unit_str = f" ({unit})" if unit else ""
+                    lines.append(f"{k}{unit_str}: {fields.get(k, '')}")
+
+            # 寫進對應的格子
+            ws[spec_map[section]] = "\n".join(lines)
+
     output = io.BytesIO()
     wb.save(output)
     return output.getvalue()
