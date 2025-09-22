@@ -265,7 +265,6 @@ def form_page():
     if st.button("🚪 登出"): logout()
     customer_info = render_customer_info()
     project_info = render_project_info()
-    feasibility_info = render_feasibility()
     spec_info = render_spec_info()
 
     if st.button("✅ 完成"):
