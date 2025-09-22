@@ -155,26 +155,39 @@ def login_page():
     st.title("💻 Kipo專案申請系統")
     username = st.text_input("帳號", key="login_username")
     password = st.text_input("密碼", type="password", key="login_password")
+
     if st.button("🔑 登入"):
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username]["password"] == password:
             st.session_state["logged_in"] = True
             st.session_state["user"] = USER_CREDENTIALS[username]["name"]
 
-            # 登入後 → 檢查 Lock 狀態
+            # ✅ 登入後先檢查 Lock
             df_lock, _ = load_lock_df()
             active = df_lock[df_lock["User"] != ""]
+
             if not active.empty:
                 current_user = active.iloc[0]["User"]
+
                 if current_user == st.session_state["user"]:
-                    # 如果自己已經持有 Lock → 載入最後一筆紀錄，進入預覽
-                    records = sheet.get_all_records()
-                    if records:
-                        st.session_state["record"] = records[-1]
+                    # ✅ 自己持有 Lock → 取屬於自己的「最後一筆」紀錄進入預覽
+                    records = sheet.get_all_records()  # list[dict]
+                    user = st.session_state["user"]
+                    user_records = [r for r in records if str(r.get("Sales_User", "")).strip() == user]
+
+                    if user_records:
+                        last = user_records[-1]
+
+                        # 防止 Spec_Type 從試算表回來是字串導致 preview 迴圈 .items() 當掉
+                        if isinstance(last.get("Spec_Type"), str):
+                            last["Spec_Type"] = {}
+
+                        st.session_state["record"] = last
                         st.session_state["page"] = "preview"
                     else:
+                        # 沒有屬於自己的紀錄，回到表單填寫
                         st.session_state["page"] = "form"
                 else:
-                    # 有人佔用 Lock → 還是先進入表單，送出時會被擋下
+                    # 有人持有 Lock 但不是自己 → 進入表單（送出時會被擋）
                     st.session_state["page"] = "form"
             else:
                 # 沒有 Lock → 正常進入表單
