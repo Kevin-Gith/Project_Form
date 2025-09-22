@@ -6,7 +6,6 @@ import os
 from openpyxl import load_workbook
 from google.oauth2.service_account import Credentials
 import datetime
-import json
 
 # ========== Google Sheet 設定 ==========
 SHEET_NAME = "Project_Form"
@@ -46,6 +45,7 @@ USER_CREDENTIALS = {
 # 優先順序
 USER_PRIORITY = {"Sam": 1, "Vivian": 2, "Lillian": 3, "Wendy": 4}
 
+
 # ========== Lock 機制 ==========
 def open_lock_ws():
     sh = client.open(SHEET_NAME)
@@ -55,6 +55,7 @@ def open_lock_ws():
         ws_lock = sh.add_worksheet(title=LOCK_SHEET_NAME, rows=10, cols=2)
         ws_lock.update("A1:B1", [["User", "Locked_Time"]])
     return ws_lock
+
 
 def load_lock_df():
     ws_lock = open_lock_ws()
@@ -66,11 +67,13 @@ def load_lock_df():
         df_lock["Locked_Time"] = ""
     return df_lock, ws_lock
 
+
 def acquire_lock(username: str) -> (bool, str):
     df_lock, ws_lock = load_lock_df()
     active = df_lock[df_lock["User"] != ""]
     now = datetime.datetime.now()
 
+    # 沒有人鎖 → 直接鎖上
     if active.empty:
         ws_lock.append_row([username, now.strftime("%Y-%m-%d %H:%M:%S")])
         return True, ""
@@ -81,19 +84,23 @@ def acquire_lock(username: str) -> (bool, str):
     )
     time_diff = (now - lock_time).total_seconds()
 
+    # 如果已經是自己 → 通過，不重新鎖
     if current_user == username:
         return True, ""
 
+    # 不是自己 → 檢查是否 3 秒內搶佔
     if time_diff <= 3:
         current_pri = USER_PRIORITY.get(current_user, 99)
         new_pri = USER_PRIORITY.get(username, 99)
-        if new_pri < current_pri:
+        if new_pri < current_pri:  # 優先權較高 → 搶走鎖
             ws_lock.update("A2:B2", [[username, now.strftime("%Y-%m-%d %H:%M:%S")]])
             return True, ""
         else:
             return False, current_user
     else:
+        # 超過 3 秒後 → 鎖定者持續擁有，不會自動解鎖
         return False, current_user
+
 
 def release_lock(username: str):
     df_lock, ws_lock = load_lock_df()
@@ -102,18 +109,20 @@ def release_lock(username: str):
             ws_lock.update_cell(i + 2, 1, "")
             ws_lock.update_cell(i + 2, 2, "")
 
+
 # ========== 登出 ==========
 def logout():
     st.session_state.clear()
     st.session_state["page"] = "login"
     st.session_state["logged_in"] = False
 
+
 # ========== 專案編號產生 ==========
 def generate_project_number(odm, product_app, cooling):
     odm_code = odm.split(")")[0].strip("(")
     prod_code = product_app.split(")")[0].strip("(")
     cool_code = cooling.split(")")[0].strip("(")
-    prefix = f"{odm_code}{prod_code}{cool_code}"
+    prefix = f"{odm_code}{prod_code}{cool_code}"  # 6碼連續
 
     records = sheet.get_all_records()
     max_num = 0
@@ -128,14 +137,16 @@ def generate_project_number(odm, product_app, cooling):
     new_seq = max_num + 1
     return f"{prefix}-{new_seq:03d}"
 
+
 # ========== 儲存 Google Sheet ==========
 def save_to_google_sheet(record):
     record_for_sheet = record.copy()
     record_for_sheet["Project_Number"] = record.get("Project_Number", "")
-    record_for_sheet["Spec_Type"] = json.dumps(record.get("Spec_Type", {}), ensure_ascii=False)
+    record_for_sheet["Spec_Type"] = ", ".join(record.get("Spec_Type", {}).keys())
     record_for_sheet["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
     row = [record_for_sheet.get(col, "") for col in SHEET_HEADERS]
     sheet.append_row(row)
+
 
 # ========== 匯出 Excel ==========
 def export_to_template(record):
@@ -146,6 +157,7 @@ def export_to_template(record):
     output = io.BytesIO()
     wb.save(output)
     return output.getvalue()
+
 
 # ========== 頁面：登入 ==========
 def login_page():
@@ -158,69 +170,134 @@ def login_page():
             st.session_state["logged_in"] = True
             st.session_state["user"] = USER_CREDENTIALS[username]["name"]
 
+            # ✅ 登入後先檢查 Lock
             df_lock, _ = load_lock_df()
             active = df_lock[df_lock["User"] != ""]
-            if not active.empty and active.iloc[0]["User"] == st.session_state["user"]:
-                records = sheet.get_all_records()
-                user_records = [r for r in records if str(r.get("Sales_User", "")) == st.session_state["user"]]
-                if user_records:
-                    last = user_records[-1]
-                    if isinstance(last.get("Spec_Type"), str):
-                        try:
-                            last["Spec_Type"] = json.loads(last["Spec_Type"])
-                        except:
+
+            if not active.empty:
+                current_user = active.iloc[0]["User"]
+
+                if current_user == st.session_state["user"]:
+                    # ✅ 自己持有 Lock → 取屬於自己的「最後一筆」紀錄進入預覽
+                    records = sheet.get_all_records()  # list[dict]
+                    user = st.session_state["user"]
+                    user_records = [r for r in records if str(r.get("Sales_User", "")).strip() == user]
+
+                    if user_records:
+                        last = user_records[-1]
+
+                        # 防止 Spec_Type 從試算表回來是字串導致 preview 迴圈 .items() 當掉
+                        if isinstance(last.get("Spec_Type"), str):
                             last["Spec_Type"] = {}
-                    st.session_state["record"] = last
-                    st.session_state["from_login_preview"] = True
-                    st.session_state["page"] = "preview"
+
+                        st.session_state["record"] = last
+                        st.session_state["page"] = "preview"
+                    else:
+                        # 沒有屬於自己的紀錄，回到表單填寫
+                        st.session_state["page"] = "form"
                 else:
+                    # 有人持有 Lock 但不是自己 → 進入表單（送出時會被擋）
                     st.session_state["page"] = "form"
             else:
+                # 沒有 Lock → 正常進入表單
                 st.session_state["page"] = "form"
         else:
             st.error("帳號或密碼錯誤，請重新輸入")
+
 
 # ========== 頁面：A. 客戶資訊 ==========
 def render_customer_info():
     st.write(f"### 北辦業務：{st.session_state.get('user','')}")
     st.header("A. 客戶資訊")
-    odm = st.selectbox("ODM客戶 (RD)", ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)其他"], key="odm")
+
+    odm = st.selectbox(
+        "ODM客戶 (RD)",
+        ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)其他"],
+        key="odm"
+    )
     if odm == "(08)其他":
         odm = st.text_input("請輸入ODM客戶", key="odm_other")
-    brand = st.selectbox("品牌客戶 (RD)", ["(01)惠普", "(02)聯想", "(03)高通", "(04)華碩", "(05)宏碁", "(06)微星", "(07)技嘉", "(08)其他"], key="brand")
+
+    brand = st.selectbox(
+        "品牌客戶 (RD)",
+        ["(01)惠普", "(02)聯想", "(03)高通", "(04)華碩", "(05)宏碁", "(06)微星", "(07)技嘉", "(08)其他"],
+        key="brand"
+    )
     if brand == "(08)其他":
         brand = st.text_input("請輸入品牌客戶", key="brand_other")
-    purpose = st.selectbox("申請目的", ["(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(04)其他"], key="purpose")
+
+    purpose = st.selectbox(
+        "申請目的",
+        ["(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(04)其他"],
+        key="purpose"
+    )
     if purpose == "(04)其他":
         purpose = st.text_input("請輸入申請目的", key="purpose_other")
+
     project_name = st.text_input("客戶專案名稱", key="project_name")
     proposal_date = st.date_input("客戶提案日期", value=datetime.date.today(), key="proposal_date")
-    return {"Sales_User": st.session_state["user"], "ODM_Customers": odm, "Brand_Customers": brand,
-            "Application_Purpose": purpose, "Project_Name": project_name, "Proposal_Date": proposal_date.strftime("%Y/%m/%d")}
+
+    return {
+        "Sales_User": st.session_state["user"],
+        "ODM_Customers": odm,
+        "Brand_Customers": brand,
+        "Application_Purpose": purpose,
+        "Project_Name": project_name,
+        "Proposal_Date": proposal_date.strftime("%Y/%m/%d")
+    }
+
 
 # ========== 頁面：B. 開案資訊 ==========
 def render_project_info():
     st.header("B. 開案資訊")
-    product_app = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Other"], key="product_app")
+
+    product_app = st.selectbox(
+        "產品應用",
+        ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Other"],
+        key="product_app"
+    )
     if product_app == "(05)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
-    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Cooler(含Fan)", "(04)Liquid Cooling", "(05)Other"], key="cooling")
+
+    cooling = st.selectbox(
+        "散熱方式",
+        ["(01)Air Cooling", "(02)Fan", "(03)Cooler(含Fan)", "(04)Liquid Cooling", "(05)Other"],
+        key="cooling"
+    )
     if cooling == "(05)Other":
         cooling = st.text_input("請輸入散熱方式", key="cooling_other")
-    delivery = st.selectbox("交貨地點", ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"], key="delivery")
+
+    delivery = st.selectbox(
+        "交貨地點",
+        ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"],
+        key="delivery"
+    )
     if delivery == "(05)Other":
         delivery = st.text_input("請輸入交貨地點", key="delivery_other")
+
     sample_date = st.date_input("樣品需求日期", value=datetime.date.today(), key="sample_date")
     sample_qty = st.text_input("樣品需求數量", key="sample_qty")
     demand_qty = st.text_input("需求量 (預估數量/總年數)", key="demand_qty")
+
     col1, col2, col3, col4 = st.columns(4)
     si = col1.text_input("SI", key="si")
     pv = col2.text_input("PV", key="pv")
     mv = col3.text_input("MV", key="mv")
     mp = col4.text_input("MP", key="mp")
-    return {"Product_Application": product_app, "Cooling_Solution": cooling, "Delivery_Location": delivery,
-            "Sample_Date": sample_date.strftime("%Y/%m/%d"), "Sample_Qty": sample_qty,
-            "Demand_Qty": demand_qty, "SI": si, "PV": pv, "MV": mv, "MP": mp}
+
+    return {
+        "Product_Application": product_app,
+        "Cooling_Solution": cooling,
+        "Delivery_Location": delivery,
+        "Sample_Date": sample_date.strftime("%Y/%m/%d"),
+        "Sample_Qty": sample_qty,
+        "Demand_Qty": demand_qty,
+        "SI": si,
+        "PV": pv,
+        "MV": mv,
+        "MP": mp
+    }
+
 
 # ========== 頁面：C. 規格資訊 ==========
 def render_spec_info():
@@ -279,13 +356,17 @@ def render_spec_info():
 
     return spec_data
 
+
 # ========== 頁面：表單 ==========
 def form_page():
     if not st.session_state.get("logged_in", False):
         st.session_state["page"] = "login"
         return
+
     st.title("💻 Kipo專案申請系統")
-    if st.button("🚪 登出"): logout()
+    if st.button("🚪 登出"):
+        logout()
+
     customer_info = render_customer_info()
     project_info = render_project_info()
     spec_info = render_spec_info()
@@ -295,6 +376,7 @@ def form_page():
         if not lock_acquired:
             st.warning(f"目前由 {holder} 使用中，請稍後")
             return
+
         if any(v in ["", None] for v in customer_info.values()):
             st.error("客戶資訊未完成填寫，請重新確認")
         elif any(v in ["", None] for v in project_info.values()):
@@ -302,76 +384,84 @@ def form_page():
         elif not spec_info:
             st.error("規格資訊請至少選擇一種方案")
         else:
-            project_number = generate_project_number(customer_info["ODM_Customers"], project_info["Product_Application"], project_info["Cooling_Solution"])
-            st.session_state["record"] = {"Project_Number": project_number, **customer_info, **project_info, "Spec_Type": spec_info}
+            project_number = generate_project_number(
+                customer_info["ODM_Customers"],
+                project_info["Product_Application"],
+                project_info["Cooling_Solution"]
+            )
+            st.session_state["record"] = {
+                "Project_Number": project_number,
+                **customer_info,
+                **project_info,
+                "Spec_Type": spec_info
+            }
             st.session_state["submitted"] = False
-            st.session_state["from_login_preview"] = False
             st.session_state["page"] = "preview"
+
 
 # ========== 頁面：預覽 ==========
 def preview_page():
     st.title("📋 預覽填寫內容")
     record = st.session_state.get("record", {})
+
     st.subheader(f"專案編號：{record.get('Project_Number','')}")
     st.write(f"### 北辦業務：{record.get('Sales_User','')}")
 
     st.subheader("A. 客戶資訊")
-    for k, v in {"ODM_Customers": "ODM客戶(RD)", "Brand_Customers": "品牌客戶(RD)", "Application_Purpose": "申請目的"}.items():
+    for k, v in {
+        "ODM_Customers": "ODM客戶(RD)",
+        "Brand_Customers": "品牌客戶(RD)",
+        "Application_Purpose": "申請目的"
+    }.items():
         st.write(f"**{v}：** {record.get(k, '')}")
 
     st.subheader("B. 開案資訊")
-    for k, v in {"Product_Application": "產品應用", "Cooling_Solution": "散熱方式", "Delivery_Location": "交貨地點"}.items():
+    for k, v in {
+        "Product_Application": "產品應用",
+        "Cooling_Solution": "散熱方式",
+        "Delivery_Location": "交貨地點"
+    }.items():
         st.write(f"**{v}：** {record.get(k, '')}")
 
     st.subheader("C. 規格資訊")
-    spec_type = record.get("Spec_Type", {})
-    if isinstance(spec_type, str):
-        try:
-            spec_type = json.loads(spec_type)
-        except:
-            spec_type = {}
-    for section, fields in spec_type.items():
+    for section, fields in record.get("Spec_Type", {}).items():
         st.markdown(f"**{section}**")
         for k, v in fields.items():
-            if v:
-                st.write(f"{k}: {v}")
+            st.write(f"{k}: {v}")
 
-    if st.session_state.get("from_login_preview", False):
-        excel_data = export_to_template(record)
-        st.download_button(
-            label="⬇️ 下載Excel檔案",
-            data=excel_data,
-            file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        st.info("ℹ️ 這是你最後一次提交的紀錄，僅提供下載，不可修改或重送")
-    else:
-        col1, col2 = st.columns(2)
-        if col1.button("🔙 返回修改"):
+    col1, col2 = st.columns(2)
+    if col1.button("🔙 返回修改"):
+        release_lock(st.session_state["user"])
+        st.session_state["page"] = "form"
+
+    if not st.session_state.get("submitted", False):
+        if col2.button("💾 確認送出", key="confirm_submit"):
+            save_to_google_sheet(record)
+            excel_data = export_to_template(record)
             release_lock(st.session_state["user"])
-            st.session_state["page"] = "form"
-        if not st.session_state.get("submitted", False):
-            if col2.button("💾 確認送出", key="confirm_submit"):
-                save_to_google_sheet(record)
-                excel_data = export_to_template(record)
-                release_lock(st.session_state["user"])
-                st.download_button(
-                    label="⬇️ 自動下載Excel檔案",
-                    data=excel_data,
-                    file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-                st.success("✅ 申請表單已準備好下載")
-                st.session_state["submitted"] = True
+            st.download_button(
+                label="⬇️ 自動下載Excel檔案",
+                data=excel_data,
+                file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            st.success("✅ 申請表單已準備好下載")
+            st.session_state["submitted"] = True
+
 
 # ========== 主程式 ==========
 def main():
     if "page" not in st.session_state:
         st.session_state["page"] = "login"
         st.session_state["logged_in"] = False
-    if st.session_state["page"] == "login": login_page()
-    elif st.session_state["page"] == "form": form_page()
-    elif st.session_state["page"] == "preview": preview_page()
+
+    if st.session_state["page"] == "login":
+        login_page()
+    elif st.session_state["page"] == "form":
+        form_page()
+    elif st.session_state["page"] == "preview":
+        preview_page()
+
 
 if __name__ == "__main__":
     main()
