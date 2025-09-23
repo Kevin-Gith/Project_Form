@@ -505,25 +505,21 @@ def preview_page():
 
     # ✅ 第一次送出 → 固定專案資料 & 檔名
     if not st.session_state.get("submitted", False):
-        if now_ts - st.session_state["last_submit_time"] > cooldown:
-            if col2.button("💾 確認送出", key="confirm_submit"):
-                st.session_state["last_submit_time"] = now_ts
+        if col2.button("💾 確認送出", key="confirm_submit"):
+            save_to_google_sheet(record)
+            excel_data = export_to_template(record)
+            release_lock(st.session_state["user"])
 
-                save_to_google_sheet(record)
-                excel_data = export_to_template(record)
-                release_lock(st.session_state["user"])
+            # 固定專案資料與檔名
+            TAIWAN_TZ = pytz.timezone("Asia/Taipei")
+            apply_date = datetime.datetime.now(TAIWAN_TZ).strftime("%Y%m%d")
+            st.session_state["excel_data"] = excel_data
+            st.session_state["fixed_record"] = record.copy()
+            st.session_state["fixed_filename"] = f"ProjectForm_{record.get('Project_Number','')}_{apply_date}.xlsx"
 
-                apply_date = datetime.datetime.now(TAIWAN_TZ).strftime("%Y%m%d")
+            st.session_state["submitted"] = True
+            st.success("✅ 已準備好下載Excel檔案")
 
-                # 🔒 固定資料與檔名
-                st.session_state["excel_data"] = excel_data
-                st.session_state["fixed_record"] = record.copy()
-                st.session_state["fixed_filename"] = f"ProjectForm_{record.get('Project_Number','')}_{apply_date}.xlsx"
-
-                st.session_state["submitted"] = True
-                st.success("✅ 申請表單已送出")
-        else:
-            st.info("⏳ 請稍候再送出，以避免重複紀錄")
 
     # ✅ 後續下載都用第一次固定的 excel_data & 檔名
     if "excel_data" in st.session_state:
