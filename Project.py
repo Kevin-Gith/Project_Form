@@ -424,27 +424,72 @@ def preview_page():
     st.subheader(f"專案編號：{record.get('Project_Number','')}")
     st.write(f"### 北辦業務：{record.get('Sales_User','')}")
 
+# ==================== 預覽畫面 ====================
     st.subheader("A. 客戶資訊")
-    for k, v in {
-        "ODM_Customers": "ODM客戶(RD)", 
-        "Brand_Customers": "品牌客戶(RD)", 
-        "Application_Purpose": "申請目的"
-    }.items():
-        st.write(f"**{v}：** {record.get(k, '')}")
+    customer_fields = {
+        "ODM_Customers": "ODM客戶(RD)",
+        "Brand_Customers": "品牌客戶(RD)",
+        "Application_Purpose": "申請目的",
+        "Project_Name": "客戶專案名稱",
+        "Proposal_Date": "客戶提案日期"
+    }
+    for k, v in customer_fields.items():
+        value = str(record.get(k, "")) if record.get(k, "") not in [None, ""] else ""
+        st.write(f"**{v}：** {value}")
 
     st.subheader("B. 開案資訊")
-    for k, v in {
-        "Product_Application": "產品應用", 
-        "Cooling_Solution": "散熱方式", 
-        "Delivery_Location": "交貨地點"
-    }.items():
-        st.write(f"**{v}：** {record.get(k, '')}")
+    project_fields = {
+        "Product_Application": "產品應用",
+        "Cooling_Solution": "散熱方式",
+        "Delivery_Location": "交貨地點",
+        "Sample_Date": "樣品需求日期",
+        "Sample_Qty": "樣品需求數量",
+        "Demand_Qty": "需求量 (預估數量/總年數)",
+        "Schedule SI": "Schedule SI",
+        "Schedule PV": "Schedule PV",
+        "Schedule MV": "Schedule MV",
+        "Schedule MP": "Schedule MP"
+    }
+    for k, v in project_fields.items():
+        value = str(record.get(k, "")) if record.get(k, "") not in [None, ""] else ""
+        st.write(f"**{v}：** {value}")
 
     st.subheader("C. 規格資訊")
+    DISPLAY_NAMES = {
+        "Air_Flow": "Air Flow (RPM/Voltage/CFM)",
+        "Tcase_Max": "Tcase_Max (°C)",
+        "Thermal_Resistance": "Thermal Resistance (°C/W)",
+        "Max_Power": "Max Power (W)",
+        "Chip_Length": "Chip_Length (mm)",
+        "Chip_Width": "Chip_Width (mm)",
+        "Chip_Height": "Chip_Height (mm)",
+        "Input_Voltage": "Input voltage (V)",
+        "Input_Current": "Input current (A)",
+        "PQ": "P-Q",
+        "Speed": "Rotational speed (RPM)",
+        "Noise": "Noise (dB)",
+        "Tone": "Tone",
+        "Sone": "Sone",
+        "Weight": "Weight (g)",
+        "Connector": "端子頭型號",
+        "Wiring": "線序",
+        "Cable_Length": "出框線長",
+        "Length": "Length (mm)",
+        "Width": "Width (mm)",
+        "Height": "Height (mm)",
+        "Plate_Form": "Plate Form",
+        "Tj_Max": "Tj_Max (°C)",
+        "T_Inlet": "T_Inlet (°C)",
+        "Flow_Rate": "Flow rate (LPM)",
+        "Impedance": "Impedance (KPa)",
+        "Max_Loading": "Max loading (lbs)"
+    }
+
     for section, fields in record.get("Spec_Type", {}).items():
         st.markdown(f"**{section}**")
-        for k, v in fields.items():
-            st.write(f"{k}: {v}")
+        for k, label in DISPLAY_NAMES.items():
+            value = str(fields.get(k, "")) if fields.get(k, "") not in [None, ""] else ""
+            st.write(f"{label}: {value}")
 
     col1, col2 = st.columns(2)
     if col1.button("🔙 返回修改"):
@@ -510,7 +555,7 @@ if __name__ == "__main__":
 #1.使用者登入帳號密碼(當帳號密碼輸入正確時，按下登入按鈕後，會轉跳畫面)
 
 #使用者Sam -> 帳號：sam@kipotec.com.tw / 密碼：Kipo-0926969586$$$
-#使用者Vivian -> 帳號：sale1@kipotec.com.tw / 密碼：Kipo-0917369466$$$  
+#使用者Vivian -> 帳號：sale1@kipotec.com.tw / 密碼：Kipo-0917369466$$$
 #使用者Wendy -> 帳號：sale5@kipotec.com.tw / 密碼：Kipo-0925698417$$$
 #使用者Lillian -> 帳號：sale2@kipotec.com.tw / 密碼：Kipo-0905038111$$$
 
