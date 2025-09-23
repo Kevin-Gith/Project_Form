@@ -6,11 +6,13 @@ import os
 from openpyxl import load_workbook
 from google.oauth2.service_account import Credentials
 import datetime
+import pytz
 
 # ========== Google Sheet 設定 ==========
 SHEET_NAME = "Project_Form"
 WORKSHEET_NAME = "Python"
 LOCK_SHEET_NAME = "Lock"
+TAIWAN_TZ = pytz.timezone("Asia/Taipei")
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -114,17 +116,12 @@ def generate_project_number(odm, product_app, cooling):
     cool_code = cooling.split(")")[0].strip("(")
     prefix = f"{odm_code}{prod_code}{cool_code}"
 
-    records = sheet.get_all_records()
-    max_num = 0
-    for r in records:
-        proj = str(r.get("Project_Number", "")).strip()
-        if proj.startswith(prefix):
-            try:
-                seq = int(proj.split("-")[-1])
-                max_num = max(max_num, seq)
-            except ValueError:
-                pass
-    new_seq = max_num + 1
+    # 總行數（包含標題列），扣掉 1 才是已經有的資料筆數
+    total_rows = len(sheet.get_all_values()) - 1  
+
+    # 下一筆流水號 = 資料筆數 + 1
+    new_seq = total_rows + 1  
+
     return f"{prefix}-{new_seq:03d}"
 
 # ========== 儲存 Google Sheet ==========
@@ -132,7 +129,9 @@ def save_to_google_sheet(record):
     record_for_sheet = record.copy()
     record_for_sheet["Project_Number"] = record.get("Project_Number", "")
     record_for_sheet["Spec_Type"] = ", ".join(record.get("Spec_Type", {}).keys())
-    record_for_sheet["Update_Time"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M")
+    # 台灣時間
+    record_for_sheet["Update_Time"] = datetime.datetime.now(TAIWAN_TZ).strftime("%Y/%m/%d %H:%M")
+    
     row = [record_for_sheet.get(col, "") for col in SHEET_HEADERS]
     sheet.append_row(row)
 
@@ -300,8 +299,8 @@ def render_project_info():
     product_app = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Other"], key="product_app")
     if product_app == "(05)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
-    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Cooler(含Fan)", "(04)Liquid Cooling", "(05)Other"], key="cooling")
-    if cooling == "(05)Other":
+    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Liquid Cooling", "(04)Other"], key="cooling")
+    if cooling == "(04)Other":
         cooling = st.text_input("請輸入散熱方式", key="cooling_other")
     delivery = st.selectbox("交貨地點", ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"], key="delivery")
     if delivery == "(05)Other":
@@ -393,6 +392,7 @@ def form_page():
         lock_acquired, holder = acquire_lock(st.session_state["user"])
         if not lock_acquired:
             st.warning(f"目前由 {holder} 使用中，請稍後")
+            st.warning("當出現異常鎖定問題時，請尋求PM協助處理")
             return
 
         if any(v in ["", None] for v in customer_info.values()):
@@ -450,19 +450,24 @@ def preview_page():
         release_lock(st.session_state["user"])
         st.session_state["page"] = "form"
 
+    # 第一次送出：寫入 Google Sheet + 產生 Excel 並存到 session_state
     if not st.session_state.get("submitted", False):
         if col2.button("💾 確認送出", key="confirm_submit"):
             save_to_google_sheet(record)
             excel_data = export_to_template(record)
             release_lock(st.session_state["user"])
-            st.download_button(
-                label="⬇️ 自動下載Excel檔案",
-                data=excel_data,
-                file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-            st.success("✅ 申請表單已準備好下載")
+            st.session_state["excel_data"] = excel_data
             st.session_state["submitted"] = True
+            st.success("✅ 申請表單已送出")
+
+    # 只要有 Excel，就顯示下載按鈕（不會因為多次點擊消失）
+    if "excel_data" in st.session_state:
+        st.download_button(
+            label="⬇️ 自動下載Excel檔案",
+            data=st.session_state["excel_data"],
+            file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
 # ========== 主程式 ==========
 def main():
