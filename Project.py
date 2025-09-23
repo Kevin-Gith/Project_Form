@@ -70,7 +70,7 @@ def load_lock_df():
 def acquire_lock(username: str) -> (bool, str):
     df_lock, ws_lock = load_lock_df()
     active = df_lock[df_lock["User"] != ""]
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(TAIWAN_TZ)   # ✅ 改成台灣時間
 
     if active.empty:
         ws_lock.append_row([username, now.strftime("%Y-%m-%d %H:%M:%S")])
@@ -392,7 +392,7 @@ def form_page():
         lock_acquired, holder = acquire_lock(st.session_state["user"])
         if not lock_acquired:
             st.warning(f"目前由 {holder} 使用中，請稍後")
-            st.warning("當出現異常鎖定問題時，請尋求PM協助處理")
+            st.warning("當鎖定問題無法透過正常流程解除時，請尋求PM協助處理")
             return
 
         if any(v in ["", None] for v in customer_info.values()):
@@ -416,7 +416,6 @@ def form_page():
             st.session_state["submitted"] = False
             st.session_state["page"] = "preview"
 
-# ========== 頁面：預覽 ==========
 def preview_page():
     st.title("📋 預覽填寫內容")
     record = st.session_state.get("record", {})
@@ -450,22 +449,32 @@ def preview_page():
         release_lock(st.session_state["user"])
         st.session_state["page"] = "form"
 
-    # 第一次送出：寫入 Google Sheet + 產生 Excel 並存到 session_state
+    # ✅ 第一次送出 → 固定專案資料 & 檔名
     if not st.session_state.get("submitted", False):
         if col2.button("💾 確認送出", key="confirm_submit"):
             save_to_google_sheet(record)
             excel_data = export_to_template(record)
             release_lock(st.session_state["user"])
+
+            # 台灣時間
+            import pytz
+            TAIWAN_TZ = pytz.timezone("Asia/Taipei")
+            apply_date = datetime.datetime.now(TAIWAN_TZ).strftime("%Y%m%d")
+
+            # 🔒 固定資料與檔名
             st.session_state["excel_data"] = excel_data
+            st.session_state["fixed_record"] = record.copy()
+            st.session_state["fixed_filename"] = f"ProjectForm_{record.get('Project_Number','')}_{apply_date}.xlsx"
+
             st.session_state["submitted"] = True
             st.success("✅ 申請表單已送出")
 
-    # 只要有 Excel，就顯示下載按鈕（不會因為多次點擊消失）
+    # ✅ 後續下載都用第一次固定的 excel_data & 檔名
     if "excel_data" in st.session_state:
         st.download_button(
             label="⬇️ 自動下載Excel檔案",
             data=st.session_state["excel_data"],
-            file_name=f"ProjectForm_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+            file_name=st.session_state.get("fixed_filename", "ProjectForm.xlsx"),
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
@@ -508,7 +517,7 @@ if __name__ == "__main__":
 
 #<B.開案資訊>
 #產品應用：下拉式選單(01)NB CPU、(02)NB GPU、(03)Server、(04)Automotive(Car)、(05)Other
-#散熱方式：下拉式選單(01)Air Cooling、(02)Fan、(03)Cooler(含Fan)、(04)Liquid Cooling、(05)Other
+#散熱方式：下拉式選單(01)Air Cooling、(02)Fan、(03)Liquid Cooling、(04)Other
 #	樣品需求日期(使用者選擇日期)
 #	樣品需求數量 -> 顯示可以打字的地方，使用者自行輸入
 #	Schedule
