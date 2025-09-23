@@ -79,8 +79,9 @@ def acquire_lock(username: str) -> (bool, str):
 
     current_user = active.iloc[0]["User"]
     lock_time = datetime.datetime.strptime(
-        active.iloc[0]["Locked_Time"], "%Y-%m-%d %H:%M:%S"
-    )
+    active.iloc[0]["Locked_Time"], "%Y-%m-%d %H:%M:%S"
+    ).replace(tzinfo=TAIWAN_TZ)
+
     time_diff = (now - lock_time).total_seconds()
 
     if current_user == username:
