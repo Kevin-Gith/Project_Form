@@ -27,12 +27,12 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 sheet = client.open(SHEET_NAME).worksheet(WORKSHEET_NAME)
 
-# 固定 Google Sheet 欄位順序
+# ========== 固定 Google Sheet 欄位順序 ==========
 SHEET_HEADERS = [
     "Project_Number", "Sales_User", "ODM_Customers", "Brand_Customers", "Application_Purpose",
     "Project_Name", "Proposal_Date", "Product_Application", "Cooling_Solution",
     "Delivery_Location", "Sample_Date", "Sample_Qty", "Demand_Qty",
-    "SI", "PV", "MV", "MP", "Spec_Type", "Update_Time",
+    "Schedule SI", "Schedule PV", "Schedule MV", "Schedule MP", "Spec_Type", "Update_Time",
     "Sales_Manager", "RD_Manager", "Apply_Date", "Applicant_Name",
     "Fill_Date", "Spec_Writer", "Sales_Review", "RD_Review", "Approval"
 ]
@@ -159,10 +159,10 @@ def export_to_template(record):
     ws["B12"] = record.get("Sample_Date", "")
     ws["E12"] = record.get("Sample_Qty", "")
     ws["B13"] = record.get("Demand_Qty", "")
-    ws["B14"] = record.get("SI", "")
-    ws["E14"] = record.get("PV", "")
-    ws["B15"] = record.get("MV", "")
-    ws["E15"] = record.get("MP", "")
+    ws["B14"] = record.get("Schedule SI", "")
+    ws["E14"] = record.get("Schedule PV", "")
+    ws["B15"] = record.get("Schedule MV", "")
+    ws["E15"] = record.get("Schedule MP", "")
 
     # ====== C. 規格資訊 ======
     spec_map = {
@@ -311,13 +311,13 @@ def render_project_info():
     sample_qty = st.text_input("樣品需求數量", key="sample_qty")
     demand_qty = st.text_input("需求量 (預估數量/總年數)", key="demand_qty")
     col1, col2, col3, col4 = st.columns(4)
-    si = col1.text_input("SI", key="si")
-    pv = col2.text_input("PV", key="pv")
-    mv = col3.text_input("MV", key="mv")
-    mp = col4.text_input("MP", key="mp")
+    si = col1.text_input("Schedule SI", key="si")
+    pv = col2.text_input("Schedule PV", key="pv")
+    mv = col3.text_input("Schedule MV", key="mv")
+    mp = col4.text_input("Schedule MP", key="mp")
     return {"Product_Application": product_app, "Cooling_Solution": cooling, "Delivery_Location": delivery,
             "Sample_Date": sample_date.strftime("%Y/%m/%d"), "Sample_Qty": sample_qty,
-            "Demand_Qty": demand_qty, "SI": si, "PV": pv, "MV": mv, "MP": mp}
+            "Demand_Qty": demand_qty, "Schedule SI": si, "Schedule PV": pv, "Schedule MV": mv, "Schedule MP": mp}
 
 # ========== 頁面：C. 規格資訊 ==========
 def render_spec_info():
