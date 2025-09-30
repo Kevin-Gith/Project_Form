@@ -496,16 +496,22 @@ def preview_page():
         release_lock(st.session_state["user"])
         st.session_state["page"] = "form"
 
-    # 初始化冷卻計時器
+        # 初始化冷卻計時器
     if "last_submit_time" not in st.session_state:
         st.session_state["last_submit_time"] = 0
+    if "submitted" not in st.session_state:
+        st.session_state["submitted"] = False
 
     now_ts = time.time()
     cooldown = 5  # 冷卻 5 秒
 
-    # ✅ 第一次送出 → 固定專案資料 & 檔名
-    if not st.session_state.get("submitted", False):
-        if col2.button("💾 確認送出", key="confirm_submit"):
+    # ✅ 防重複送出
+    if col2.button("💾 確認送出", key="confirm_submit", disabled=st.session_state["submitted"]):
+        if st.session_state["submitted"]:
+            st.warning("⚠️ 已經送出過了，請勿重複提交")
+        elif now_ts - st.session_state["last_submit_time"] < cooldown:
+            st.warning("⏳ 請稍候再送出，避免重複紀錄")
+        else:
             save_to_google_sheet(record)
             excel_data = export_to_template(record)
             release_lock(st.session_state["user"])
@@ -518,8 +524,8 @@ def preview_page():
             st.session_state["fixed_filename"] = f"ProjectForm_{record.get('Project_Number','')}_{apply_date}.xlsx"
 
             st.session_state["submitted"] = True
+            st.session_state["last_submit_time"] = now_ts
             st.success("✅ 已準備好下載Excel檔案")
-
 
     # ✅ 後續下載都用第一次固定的 excel_data & 檔名
     if "excel_data" in st.session_state:
