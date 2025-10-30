@@ -39,6 +39,7 @@ SHEET_HEADERS = [
 
 # ========== 使用者帳號密碼 ==========
 USER_CREDENTIALS = {
+    "Jovi@kipotec.com.tw": {"password": "Kipo-0920602123$$$", "name": "Jovi"},
     "sam@kipotec.com.tw": {"password": "Kipo-0926969586$$$", "name": "Sam"},
     "sale1@kipotec.com.tw": {"password": "Kipo-0917369466$$$", "name": "Vivian"},
     "sale5@kipotec.com.tw": {"password": "Kipo-0925698417$$$", "name": "Wendy"},
@@ -46,7 +47,7 @@ USER_CREDENTIALS = {
 }
 
 # 優先順序
-USER_PRIORITY = {"Sam": 1, "Vivian": 2, "Lillian": 3, "Wendy": 4}
+USER_PRIORITY = {"Jovi": 1, "Sam": 2, "Vivian": 3, "Lillian": 4, "Wendy": 5}
 
 # ========== Lock 機制 ==========
 def open_lock_ws():
@@ -556,6 +557,7 @@ if __name__ == "__main__":
 #------------------------------------------------------------------------------------------------------------------
 #1.使用者登入帳號密碼(當帳號密碼輸入正確時，按下登入按鈕後，會轉跳畫面)
 
+#使用者Jovi -> 帳號：Jovi@kipotec.com.tw / 密碼：Kipo-0920602123$$$
 #使用者Sam -> 帳號：sam@kipotec.com.tw / 密碼：Kipo-0926969586$$$
 #使用者Vivian -> 帳號：sale1@kipotec.com.tw / 密碼：Kipo-0917369466$$$
 #使用者Wendy -> 帳號：sale5@kipotec.com.tw / 密碼：Kipo-0925698417$$$
@@ -566,7 +568,7 @@ if __name__ == "__main__":
 #2.填寫表單內容(登入成功後，會看到以下選項，當表單內容填寫完後，按下才完成按鈕後，會轉跳畫面)
 
 #<A.客戶資訊>
-#北辦業務：顯示使用者名稱(Sam、Vivian、Wendy、Lillian)
+#北辦PM和業務：顯示使用者名稱(Jovi、Sam、Vivian、Wendy、Lillian)
 #ODM客戶(RD)：下拉式選單(01)仁寶、(02)廣達、(03)緯創、(04)華勤、(05)光寶、(06)技嘉、(07)智邦、(08)其他
 #品牌客戶(RD)：下拉式選單(01)惠普、(02)聯想、(03)高通、(04)華碩、(05)宏碁、(06)微星、(07)技嘉、(08)其他
 #客戶專案名稱：使用者自行填寫
@@ -646,5 +648,5 @@ if __name__ == "__main__":
 #Product_Application -> 產品應用
 #Cooling_Solution -> 散熱方式
 #Delivery_Location -> 交貨地點
-#Applicant -> 使用者(Sam、Vivian、Wendy、Lillian)
+#Applicant -> 使用者(Jovi、Sam、Vivian、Wendy、Lillian)
 #Application Deadline -> 系統自行填寫(YYYY/MM/DD/HH/MM)
