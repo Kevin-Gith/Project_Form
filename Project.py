@@ -400,24 +400,32 @@ def form_page():
 
         if any(v in ["", None] for v in customer_info.values()):
             st.error("客戶資訊未完成填寫，請重新確認")
-        elif any(v in ["", None] for v in project_info.values()):
-            st.error("開案資訊未完成填寫，請重新確認")
-        elif not spec_info:
-            st.error("規格資訊請至少選擇一種方案")
+
         else:
-            project_number = generate_project_number(
-                customer_info["ODM_Customers"], 
-                project_info["Product_Application"], 
-                project_info["Cooling_Solution"]
-            )
-            st.session_state["record"] = {
-                "Project_Number": project_number, 
-                **customer_info, 
-                **project_info, 
-                "Spec_Type": spec_info
+            # 先複製一份 project_info，再排除 SI/PV/MV/MP
+            project_check = {
+                k: v for k, v in project_info.items()
+                if k not in ["Schedule SI", "Schedule PV", "Schedule MV", "Schedule MP"]
             }
-            st.session_state["submitted"] = False
-            st.session_state["page"] = "preview"
+
+            if any(v in ["", None] for v in project_check.values()):
+                st.error("開案資訊未完成填寫，請重新確認")
+            elif not spec_info:
+                st.error("規格資訊請至少選擇一種方案")
+            else:
+                project_number = generate_project_number(
+                    customer_info["ODM_Customers"],
+                    project_info["Product_Application"],
+                    project_info["Cooling_Solution"],
+                )
+                st.session_state["record"] = {
+                    "Project_Number": project_number,
+                    **customer_info,
+                    **project_info,
+                    "Spec_Type": spec_info,
+                }
+                st.session_state["submitted"] = False
+                st.session_state["page"] = "preview"
 
 def preview_page():
     st.title("📋 預覽填寫內容")
