@@ -281,10 +281,10 @@ def login_page():
 def render_customer_info():
     st.write(f"### 北辦業務：{st.session_state.get('user','')}")
     st.header("A. 客戶資訊")
-    odm = st.selectbox("ODM客戶 (RD)", ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)其他"], key="odm")
+    odm = st.selectbox("ODM客戶 (RD)", ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)Solidigm", "(00)其他"], key="odm")
     if odm == "(08)其他":
         odm = st.text_input("請輸入ODM客戶", key="odm_other")
-    brand = st.selectbox("品牌客戶 (RD)", ["(01)惠普", "(02)聯想", "(03)高通", "(04)華碩", "(05)宏碁", "(06)微星", "(07)技嘉", "(08)其他"], key="brand")
+    brand = st.selectbox("品牌客戶 (RD)", ["(01)惠普", "(02)聯想", "(03)高通", "(04)華碩", "(05)宏碁", "(06)微星", "(07)技嘉", "(08)Solidigm", "(00)其他"], key="brand")
     if brand == "(08)其他":
         brand = st.text_input("請輸入品牌客戶", key="brand_other")
     purpose = st.selectbox("申請目的", ["(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(04)其他"], key="purpose")
