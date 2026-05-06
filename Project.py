@@ -282,13 +282,13 @@ def render_customer_info():
     st.write(f"### 北辦業務：{st.session_state.get('user','')}")
     st.header("A. 客戶資訊")
     odm = st.selectbox("ODM客戶 (RD)", ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)技鋼", "(09)和碩", "(10)戴爾", "(11)Solidigm", "(00)其他"], key="odm")
-    if odm == "(08)其他":
+    if odm == "(00)其他":
         odm = st.text_input("請輸入ODM客戶", key="odm_other")
     brand = st.selectbox("品牌客戶 (RD)", ["(01)惠普", "(02)聯想", "(03)高通", "(04)華碩", "(05)宏碁", "(06)微星", "(07)智邦", "(08)技鋼", "(09)和碩", "(10)戴爾", "(11)Solidigm", "(00)其他"], key="brand")
-    if brand == "(08)其他":
+    if brand == "(00)其他":
         brand = st.text_input("請輸入品牌客戶", key="brand_other")
-    purpose = st.selectbox("申請目的", ["(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(04)其他"], key="purpose")
-    if purpose == "(04)其他":
+    purpose = st.selectbox("申請目的", ["(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(00)其他"], key="purpose")
+    if purpose == "(00)其他":
         purpose = st.text_input("請輸入申請目的", key="purpose_other")
     project_name = st.text_input("客戶專案名稱", key="project_name")
     proposal_date = st.date_input("客戶提案日期", value=datetime.date.today(), key="proposal_date")
@@ -299,14 +299,14 @@ def render_customer_info():
 # ========== 頁面：B. 開案資訊 ==========
 def render_project_info():
     st.header("B. 開案資訊")
-    product_app = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)AIO, "(06)Other"], key="product_app")
-    if product_app == "(05)Other":
+    product_app = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)AIO, "(00)Other"], key="product_app")
+    if product_app == "(00)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
-    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Liquid Cooling", "(04)Other"], key="cooling")
-    if cooling == "(04)Other":
+    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Liquid Cooling", "(00)Other"], key="cooling")
+    if cooling == "(00)Other":
         cooling = st.text_input("請輸入散熱方式", key="cooling_other")
-    delivery = st.selectbox("交貨地點", ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(05)Other"], key="delivery")
-    if delivery == "(05)Other":
+    delivery = st.selectbox("交貨地點", ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(00)Other"], key="delivery")
+    if delivery == "(00)Other":
         delivery = st.text_input("請輸入交貨地點", key="delivery_other")
     sample_date = st.date_input("樣品需求日期", value=datetime.date.today(), key="sample_date")
     sample_qty = st.text_input("樣品需求數量", key="sample_qty")
