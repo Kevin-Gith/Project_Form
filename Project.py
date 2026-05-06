@@ -299,7 +299,7 @@ def render_customer_info():
 # ========== 頁面：B. 開案資訊 ==========
 def render_project_info():
     st.header("B. 開案資訊")
-    product_app = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Other"], key="product_app")
+    product_app = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)AIO, "(06)Other"], key="product_app")
     if product_app == "(05)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
     cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Liquid Cooling", "(04)Other"], key="cooling")
