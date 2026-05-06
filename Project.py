@@ -39,11 +39,12 @@ SHEET_HEADERS = [
 
 # ========== 使用者帳號密碼 ==========
 USER_CREDENTIALS = {
+    # 建議正式上線時改放到 st.secrets，不要把密碼直接寫在 GitHub 程式碼裡
     "Jovi@kipotec.com.tw": {"password": "Kipo-0920602123$$$", "name": "Jovi"},
     "sam@kipotec.com.tw": {"password": "Kipo-0926969586$$$", "name": "Sam"},
     "sale1@kipotec.com.tw": {"password": "Kipo-0917369466$$$", "name": "Vivian"},
     "sale5@kipotec.com.tw": {"password": "Kipo-0925698417$$$", "name": "Wendy"},
-    "sale2@kipotec.com.tw": {"password": "Kipo-0905038111$$$", "name": "Lillian"},
+    "sale2@kipotec.com.tw": {"password": "請填入密碼", "Kipo-0905038111$$$": "Lillian"},
 }
 
 # 優先順序
@@ -114,9 +115,23 @@ def logout():
 
 # ========== 專案編號產生 ==========
 def generate_project_number(odm, product_app, cooling):
-    odm_code = odm.split(")")[0].strip("(")
-    prod_code = product_app.split(")")[0].strip("(")
-    cool_code = cooling.split(")")[0].strip("(")
+    def get_code(value):
+        text = str(value)
+
+        # 如果選擇「其他」或「Other」，不管實際輸入內容是什麼，專案代碼固定使用 00
+        if text.startswith("(00)") or "其他" in text or "Other" in text:
+            return "00"
+
+        # 一般選項，例如 (01)仁寶、(01)NB CPU、(01)Air Cooling，取出括號內代碼
+        if ")" in text:
+            return text.split(")")[0].strip("(")
+
+        # 如果文字沒有括號格式，代表可能是「其他」欄位的自填內容，預設代碼固定使用 00
+        return "00"
+
+    odm_code = get_code(odm)
+    prod_code = get_code(product_app)
+    cool_code = get_code(cooling)
     prefix = f"{odm_code}{prod_code}{cool_code}"
 
     # 總行數（包含標題列），扣掉 1 才是已經有的資料筆數
@@ -281,44 +296,74 @@ def login_page():
 def render_customer_info():
     st.write(f"### 北辦業務：{st.session_state.get('user','')}")
     st.header("A. 客戶資訊")
-    odm = st.selectbox("ODM客戶 (RD)", ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)技鋼", "(09)和碩", "(10)戴爾", "(11)Solidigm", "(00)其他"], key="odm")
-    if odm == "(00)其他":
+
+    odm_selected = st.selectbox("ODM客戶 (RD)", ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)技鋼", "(09)和碩", "(10)戴爾", "(11)Solidigm", "(00)其他"], key="odm")
+    odm = odm_selected
+    if odm_selected == "(00)其他":
         odm = st.text_input("請輸入ODM客戶", key="odm_other")
+
     brand = st.selectbox("品牌客戶 (RD)", ["(01)惠普", "(02)聯想", "(03)高通", "(04)華碩", "(05)宏碁", "(06)微星", "(07)智邦", "(08)技鋼", "(09)和碩", "(10)戴爾", "(11)Solidigm", "(00)其他"], key="brand")
     if brand == "(00)其他":
         brand = st.text_input("請輸入品牌客戶", key="brand_other")
+
     purpose = st.selectbox("申請目的", ["(01)客戶專案開發", "(02)內部新產品開發", "(03)技術平台預研", "(00)其他"], key="purpose")
     if purpose == "(00)其他":
         purpose = st.text_input("請輸入申請目的", key="purpose_other")
+
     project_name = st.text_input("客戶專案名稱", key="project_name")
     proposal_date = st.date_input("客戶提案日期", value=datetime.date.today(), key="proposal_date")
-    return {"Sales_User": st.session_state["user"], "ODM_Customers": odm, "Brand_Customers": brand,
-            "Application_Purpose": purpose, "Project_Name": project_name, "Proposal_Date": proposal_date.strftime("%Y/%m/%d")}
+
+    return {
+        "Sales_User": st.session_state["user"],
+        "ODM_Customers": odm,
+        "ODM_Code_Source": odm_selected,
+        "Brand_Customers": brand,
+        "Application_Purpose": purpose,
+        "Project_Name": project_name,
+        "Proposal_Date": proposal_date.strftime("%Y/%m/%d")
+    }
 
 
 # ========== 頁面：B. 開案資訊 ==========
 def render_project_info():
     st.header("B. 開案資訊")
-    product_app = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)AIO", "(00)Other"], key="product_app")
-    if product_app == "(00)Other":
+
+    product_app_selected = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)AIO", "(00)Other"], key="product_app")
+    product_app = product_app_selected
+    if product_app_selected == "(00)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
+
     cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Liquid Cooling", "(00)Other"], key="cooling")
     if cooling == "(00)Other":
         cooling = st.text_input("請輸入散熱方式", key="cooling_other")
+
     delivery = st.selectbox("交貨地點", ["(01)Taiwan", "(02)China", "(03)Thailand", "(04)Vietnam", "(00)Other"], key="delivery")
     if delivery == "(00)Other":
         delivery = st.text_input("請輸入交貨地點", key="delivery_other")
+
     sample_date = st.date_input("樣品需求日期", value=datetime.date.today(), key="sample_date")
     sample_qty = st.text_input("樣品需求數量", key="sample_qty")
     demand_qty = st.text_input("需求量 (預估數量/總年數)", key="demand_qty")
+
     col1, col2, col3, col4 = st.columns(4)
     si = col1.text_input("Schedule SI", key="si")
     pv = col2.text_input("Schedule PV", key="pv")
     mv = col3.text_input("Schedule MV", key="mv")
     mp = col4.text_input("Schedule MP", key="mp")
-    return {"Product_Application": product_app, "Cooling_Solution": cooling, "Delivery_Location": delivery,
-            "Sample_Date": sample_date.strftime("%Y/%m/%d"), "Sample_Qty": sample_qty,
-            "Demand_Qty": demand_qty, "Schedule SI": si, "Schedule PV": pv, "Schedule MV": mv, "Schedule MP": mp}
+
+    return {
+        "Product_Application": product_app,
+        "Product_Application_Code_Source": product_app_selected,
+        "Cooling_Solution": cooling,
+        "Delivery_Location": delivery,
+        "Sample_Date": sample_date.strftime("%Y/%m/%d"),
+        "Sample_Qty": sample_qty,
+        "Demand_Qty": demand_qty,
+        "Schedule SI": si,
+        "Schedule PV": pv,
+        "Schedule MV": mv,
+        "Schedule MP": mp
+    }
 
 # ========== 頁面：C. 規格資訊 ==========
 def render_spec_info():
@@ -414,8 +459,8 @@ def form_page():
                 st.error("規格資訊請至少選擇一種方案")
             else:
                 project_number = generate_project_number(
-                    customer_info["ODM_Customers"],
-                    project_info["Product_Application"],
+                    customer_info.get("ODM_Code_Source", customer_info["ODM_Customers"]),
+                    project_info.get("Product_Application_Code_Source", project_info["Product_Application"]),
                     project_info["Cooling_Solution"],
                 )
                 st.session_state["record"] = {
