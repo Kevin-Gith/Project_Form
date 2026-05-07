@@ -328,7 +328,7 @@ def render_customer_info():
 def render_project_info():
     st.header("B. 開案資訊")
 
-    product_app_selected = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)AIO", "(00)Other"], key="product_app")
+    product_app_selected = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Mini box", "(06)Network", "(00)Other"], key="product_app")
     product_app = product_app_selected
     if product_app_selected == "(00)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
