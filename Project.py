@@ -333,7 +333,7 @@ def render_project_info():
     if product_app_selected == "(00)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
 
-    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Liquid Cooling", "(00)Other"], key="cooling")
+    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Liquid to air", "(04)Liquid to liquid", "(00)Other"], key="cooling")
     if cooling == "(00)Other":
         cooling = st.text_input("請輸入散熱方式", key="cooling_other")
 
