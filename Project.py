@@ -420,7 +420,7 @@ def render_spec_info():
             "Chip_Height": st.text_input("Chip_Height (mm)", key="liq_chip_height"),
         }
 
-    if "Liquid to liquid水冷" in spec_options:
+    if "Liquid to air水冷" in spec_options:
         st.subheader("Liquid to air水冷")
         spec_data["Liquid to air水冷"] = {
             "Plate_Form": st.text_input("Plate Form", key="liq_plate"),
