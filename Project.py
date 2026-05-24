@@ -302,7 +302,7 @@ def render_customer_info():
     if odm_selected == "(00)其他":
         odm = st.text_input("請輸入ODM客戶", key="odm_other")
 
-    brand = st.selectbox("品牌客戶", [""(AT)智邦", "(AS)華碩", "(CP)仁寶", "(CS)思科", "(DL)戴爾", "(FX)富士康", "(GA)技鋼", "(GL)谷歌", "(HQ)華勤", "(HP)惠普", "(IV)英業達", "(IT)英特爾", "(LO)光寶", "(MS)微星", "(NV)輝達", "(PT)和碩", "(QT)廣達", "(SM)美超微", "(SL)索立迪姆", "(WT)緯創", "(00)其他"], key="brand")
+    brand = st.selectbox("品牌客戶", ["(AT)智邦", "(AS)華碩", "(CP)仁寶", "(CS)思科", "(DL)戴爾", "(FX)富士康", "(GA)技鋼", "(GL)谷歌", "(HQ)華勤", "(HP)惠普", "(IV)英業達", "(IT)英特爾", "(LO)光寶", "(MS)微星", "(NV)輝達", "(PT)和碩", "(QT)廣達", "(SM)美超微", "(SL)索立迪姆", "(WT)緯創", "(00)其他"], key="brand")
     if brand == "(00)其他":
         brand = st.text_input("請輸入品牌客戶", key="brand_other")
 
@@ -333,7 +333,7 @@ def render_project_info():
     if product_app_selected == "(00)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
 
-    cooling = st.selectbox("散熱方式", [""(NC)Natural Convection", "(AC)Air Cooling", "(LA)Liquid to Air", "(LL)Liquid to Liquid", "(00)Other"], key="cooling")
+    cooling = st.selectbox("散熱方式", ["(NC)Natural Convection", "(AC)Air Cooling", "(LA)Liquid to Air", "(LL)Liquid to Liquid", "(00)Other"], key="cooling")
     if cooling == "(00)Other":
         cooling = st.text_input("請輸入散熱方式", key="cooling_other")
 
