@@ -297,12 +297,12 @@ def render_customer_info():
     st.write(f"### 北辦業務：{st.session_state.get('user','')}")
     st.header("A. 客戶資訊")
 
-    odm_selected = st.selectbox("ODM客戶 (RD)", ["(01)仁寶", "(02)廣達", "(03)緯創", "(04)華勤", "(05)光寶", "(06)技嘉", "(07)智邦", "(08)技鋼", "(09)和碩", "(10)戴爾", "(11)Solidigm", "(00)其他"], key="odm")
+    odm_selected = st.selectbox("ODM客戶", ["(AT)智邦", "(AS)華碩", "(CP)仁寶", "(CS)思科", "(DL)戴爾", "(FX)富士康", "(GA)技鋼", "(GL)谷歌", "(HQ)華勤", "(HP)惠普", "(IV)英業達", "(IT)英特爾", "(LO)光寶", "(MS)微星", "(NV)輝達", "(PT)和碩", "(QT)廣達", "(SM)美超微", "(SL)索立迪姆", "(WT)緯創", "(00)其他"], key="odm")
     odm = odm_selected
     if odm_selected == "(00)其他":
         odm = st.text_input("請輸入ODM客戶", key="odm_other")
 
-    brand = st.selectbox("品牌客戶 (RD)", ["(01)惠普", "(02)聯想", "(03)高通", "(04)華碩", "(05)宏碁", "(06)微星", "(07)智邦", "(08)技鋼", "(09)和碩", "(10)戴爾", "(11)Solidigm", "(00)其他"], key="brand")
+    brand = st.selectbox("品牌客戶", [""(AT)智邦", "(AS)華碩", "(CP)仁寶", "(CS)思科", "(DL)戴爾", "(FX)富士康", "(GA)技鋼", "(GL)谷歌", "(HQ)華勤", "(HP)惠普", "(IV)英業達", "(IT)英特爾", "(LO)光寶", "(MS)微星", "(NV)輝達", "(PT)和碩", "(QT)廣達", "(SM)美超微", "(SL)索立迪姆", "(WT)緯創", "(00)其他"], key="brand")
     if brand == "(00)其他":
         brand = st.text_input("請輸入品牌客戶", key="brand_other")
 
@@ -328,12 +328,12 @@ def render_customer_info():
 def render_project_info():
     st.header("B. 開案資訊")
 
-    product_app_selected = st.selectbox("產品應用", ["(01)NB CPU", "(02)NB GPU", "(03)Server", "(04)Automotive(Car)", "(05)Mini box", "(06)Network", "(00)Other"], key="product_app")
+    product_app_selected = st.selectbox("產品應用", ["(NB)Notebook", "(SV)Sever", "(AM)Automotive(Car)", "(MI)Minibox", "(NW)Network", "(00)Other"], key="product_app")
     product_app = product_app_selected
     if product_app_selected == "(00)Other":
         product_app = st.text_input("請輸入產品應用", key="product_app_other")
 
-    cooling = st.selectbox("散熱方式", ["(01)Air Cooling", "(02)Fan", "(03)Liquid to air", "(04)Liquid to liquid", "(00)Other"], key="cooling")
+    cooling = st.selectbox("散熱方式", [""(NC)Natural Convection", "(AC)Air Cooling", "(LA)Liquid to Air", "(LL)Liquid to Liquid", "(00)Other"], key="cooling")
     if cooling == "(00)Other":
         cooling = st.text_input("請輸入散熱方式", key="cooling_other")
 
