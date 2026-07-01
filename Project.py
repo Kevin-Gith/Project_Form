@@ -44,7 +44,8 @@ USER_CREDENTIALS = {
     "sam@kipotec.com.tw": {"password": "Kipo-0926969586$$$", "name": "Sam"},
     "sale1@kipotec.com.tw": {"password": "Kipo-0917369466$$$", "name": "Vivian"},
     "sale5@kipotec.com.tw": {"password": "Kipo-0925698417$$$", "name": "Wendy"},
-    "sale2@kipotec.com.tw": {"password": "請填入密碼", "Kipo-0905038111$$$": "Lillian"},
+    "sale2@kipotec.com.tw": {"password": "Kipo-0905038111$$$": "name": "Lillian"},
+    "sale3@kipotec.com.tw": {"password": "Kipo-0988633928$$$": "name": "Honda"},
 }
 
 # 優先順序
